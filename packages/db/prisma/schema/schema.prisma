@@ -16,6 +16,7 @@ model User {
   name              String?
   avatarUrl         String?
   pushToken         String?
+  isPublic          Boolean          @default(true)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   goals             Goal[]
@@ -23,6 +24,13 @@ model User {
   goalUpdates       GoalUpdate[]
   ownedGroups       Group[]          @relation("GroupOwner")
   notifications     Notification[]
+  // Gang relationships (mutual friends)
+  gangRequestsSent     GangRequest[] @relation("GangRequestSender")
+  gangRequestsReceived GangRequest[] @relation("GangRequestReceiver")
+  gangMembershipsA     Gang[]        @relation("GangUserA")
+  gangMembershipsB     Gang[]        @relation("GangUserB")
+  // Hidden groups
+  hiddenGroups      HiddenGroup[]
 }
 
 // Goal model with surpass support
@@ -30,10 +38,13 @@ model Goal {
   id            String       @id @default(cuid())
   title         String
   description   String?
+  coverImageUrl String?
   targetValue   Float
   currentValue  Float        @default(0)
   unit          String       // e.g., "$", "miles", "hours", "books"
-  category      String?      // e.g., "financial", "fitness", "learning"
+  category      String?      // e.g., "health", "finance", "personal", "relationships", "ecology", "entertainment", "spirituality", "other"
+  status        String       @default("active") // "active" | "completed" | "failed" | "given_up" | "paused"
+  timeframe     String?      // "daily" | "weekly" | "monthly" | "yearly" | "custom"
   startDate     DateTime     @default(now())
   endDate       DateTime
   isCompleted   Boolean      @default(false)
@@ -49,6 +60,7 @@ model Goal {
 
   @@index([userId])
   @@index([groupId])
+  @@index([status])
 }
 
 // Goal updates with proof upload
@@ -106,12 +118,54 @@ model Notification {
   id        String   @id @default(cuid())
   title     String
   body      String
-  type      String   // "goal_completed" | "goal_surpassed" | "group_invite" | "goal_update"
+  type      String   // "goal_completed" | "goal_surpassed" | "group_invite" | "goal_update" | "gang_request"
   data      Json?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+}
+
+// Gang - Mutual friend relationship between two users
+model Gang {
+  id        String   @id @default(cuid())
+  userAId   String
+  userA     User     @relation("GangUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId   String
+  userB     User     @relation("GangUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+// Gang request - Pending mutual friend request
+model GangRequest {
+  id         String   @id @default(cuid())
+  senderId   String
+  sender     User     @relation("GangRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("GangRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     String   @default("pending") // "pending" | "accepted" | "rejected"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+// Hidden groups - Groups a user has chosen to hide
+model HiddenGroup {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, groupId])
   @@index([userId])
 }
