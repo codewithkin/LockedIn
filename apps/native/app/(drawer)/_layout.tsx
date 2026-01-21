@@ -1,4 +1,4 @@
-import { Compass, Info, Twitter, Home } from "lucide-react-native";
+import { Compass, Info, Twitter, Home, Users } from "lucide-react-native";
 import { Drawer } from "expo-router/drawer";
 import { useThemeColor } from "heroui-native";
 import React, { useCallback } from "react";
@@ -42,6 +42,25 @@ function DrawerLayout() {
           ),
           drawerIcon: ({ size, focused }) => (
             <Home
+              size={size}
+              color={focused ? themeColorAccent : themeColorMuted}
+            />
+          ),
+        }}
+      />
+      
+      {/* Crew Page */}
+      <Drawer.Screen
+        name="crew"
+        options={{
+          headerTitle: "Crews",
+          drawerLabel: ({ focused }) => (
+            <Text style={{ color: focused ? themeColorAccent : themeColorMuted, fontWeight: "500" }}>
+              Crews
+            </Text>
+          ),
+          drawerIcon: ({ size, focused }) => (
+            <Users
               size={size}
               color={focused ? themeColorAccent : themeColorMuted}
             />
