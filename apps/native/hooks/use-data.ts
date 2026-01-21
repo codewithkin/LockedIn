@@ -1,0 +1,386 @@
+import { useState, useCallback } from "react";
+import type { Goal, GoalUpdate, Group, GroupMember, CreateGoalInput, CreateGoalUpdateInput, CreateGroupInput } from "@/types";
+
+// Generate unique IDs
+const generateId = () => Math.random().toString(36).substring(2, 15);
+
+// Mock current user
+const CURRENT_USER_ID = "user_1";
+
+// Initial mock data
+const initialGoals: Goal[] = [
+  {
+    id: "goal_1",
+    title: "Save $500 this month",
+    description: "Building an emergency fund",
+    targetValue: 500,
+    currentValue: 127,
+    unit: "$",
+    category: "financial",
+    startDate: new Date("2026-01-01"),
+    endDate: new Date("2026-01-31"),
+    isCompleted: false,
+    isSurpassed: false,
+    createdAt: new Date("2026-01-01"),
+    updatedAt: new Date(),
+    userId: CURRENT_USER_ID,
+    updates: [
+      {
+        id: "update_1",
+        amount: 50,
+        note: "Saved from groceries",
+        proofUrl: undefined,
+        createdAt: new Date("2026-01-05"),
+        goalId: "goal_1",
+        userId: CURRENT_USER_ID,
+      },
+      {
+        id: "update_2",
+        amount: 77,
+        note: "Side hustle earnings",
+        proofUrl: "https://picsum.photos/200",
+        proofType: "image",
+        createdAt: new Date("2026-01-12"),
+        goalId: "goal_1",
+        userId: CURRENT_USER_ID,
+      },
+    ],
+  },
+  {
+    id: "goal_2",
+    title: "Run 50 miles",
+    description: "Monthly running challenge",
+    targetValue: 50,
+    currentValue: 23.5,
+    unit: "miles",
+    category: "fitness",
+    startDate: new Date("2026-01-01"),
+    endDate: new Date("2026-01-31"),
+    isCompleted: false,
+    isSurpassed: false,
+    createdAt: new Date("2026-01-01"),
+    updatedAt: new Date(),
+    userId: CURRENT_USER_ID,
+    groupId: "group_1",
+    updates: [
+      {
+        id: "update_3",
+        amount: 5.2,
+        note: "Morning run",
+        createdAt: new Date("2026-01-03"),
+        goalId: "goal_2",
+        userId: CURRENT_USER_ID,
+      },
+      {
+        id: "update_4",
+        amount: 8.3,
+        note: "Long weekend run",
+        proofUrl: "https://picsum.photos/201",
+        proofType: "image",
+        createdAt: new Date("2026-01-07"),
+        goalId: "goal_2",
+        userId: CURRENT_USER_ID,
+      },
+      {
+        id: "update_5",
+        amount: 10,
+        note: "5K race completed!",
+        proofUrl: "https://picsum.photos/202",
+        proofType: "image",
+        createdAt: new Date("2026-01-14"),
+        goalId: "goal_2",
+        userId: CURRENT_USER_ID,
+      },
+    ],
+  },
+  {
+    id: "goal_3",
+    title: "Read 4 books",
+    description: "Monthly reading goal",
+    targetValue: 4,
+    currentValue: 4,
+    unit: "books",
+    category: "learning",
+    startDate: new Date("2025-12-01"),
+    endDate: new Date("2025-12-31"),
+    isCompleted: true,
+    isSurpassed: true,
+    completedAt: new Date("2025-12-28"),
+    createdAt: new Date("2025-12-01"),
+    updatedAt: new Date("2025-12-28"),
+    userId: CURRENT_USER_ID,
+    updates: [],
+  },
+];
+
+const initialGroups: Group[] = [
+  {
+    id: "group_1",
+    name: "Fitness Warriors",
+    description: "Accountability group for fitness goals",
+    inviteCode: "FIT2026",
+    isPublic: true,
+    createdAt: new Date("2026-01-01"),
+    updatedAt: new Date(),
+    ownerId: CURRENT_USER_ID,
+    members: [
+      {
+        id: "member_1",
+        role: "admin",
+        joinedAt: new Date("2026-01-01"),
+        userId: CURRENT_USER_ID,
+        groupId: "group_1",
+      },
+      {
+        id: "member_2",
+        role: "member",
+        joinedAt: new Date("2026-01-02"),
+        userId: "user_2",
+        groupId: "group_1",
+      },
+      {
+        id: "member_3",
+        role: "member",
+        joinedAt: new Date("2026-01-03"),
+        userId: "user_3",
+        groupId: "group_1",
+      },
+    ],
+    goals: [],
+  },
+  {
+    id: "group_2",
+    name: "Money Makers",
+    description: "Track financial goals together",
+    inviteCode: "MONEY26",
+    isPublic: false,
+    createdAt: new Date("2026-01-05"),
+    updatedAt: new Date(),
+    ownerId: "user_2",
+    members: [
+      {
+        id: "member_4",
+        role: "admin",
+        joinedAt: new Date("2026-01-05"),
+        userId: "user_2",
+        groupId: "group_2",
+      },
+      {
+        id: "member_5",
+        role: "member",
+        joinedAt: new Date("2026-01-06"),
+        userId: CURRENT_USER_ID,
+        groupId: "group_2",
+      },
+    ],
+    goals: [],
+  },
+];
+
+// Global store (in real app, this would be Zustand or similar)
+let goalsStore = [...initialGoals];
+let groupsStore = [...initialGroups];
+
+export function useGoals() {
+  const [goals, setGoals] = useState<Goal[]>(goalsStore);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const refreshGoals = useCallback(() => {
+    setGoals([...goalsStore]);
+  }, []);
+
+  const createGoal = useCallback(async (input: CreateGoalInput): Promise<Goal> => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 500)); // Simulate API delay
+
+    const newGoal: Goal = {
+      id: generateId(),
+      ...input,
+      currentValue: 0,
+      startDate: new Date(),
+      isCompleted: false,
+      isSurpassed: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      userId: CURRENT_USER_ID,
+      updates: [],
+    };
+
+    goalsStore = [...goalsStore, newGoal];
+    setGoals([...goalsStore]);
+    setIsLoading(false);
+    return newGoal;
+  }, []);
+
+  const addGoalUpdate = useCallback(
+    async (input: CreateGoalUpdateInput): Promise<GoalUpdate> => {
+      setIsLoading(true);
+      await new Promise((r) => setTimeout(r, 500));
+
+      const goalIndex = goalsStore.findIndex((g) => g.id === input.goalId);
+      if (goalIndex === -1) throw new Error("Goal not found");
+
+      const newUpdate: GoalUpdate = {
+        id: generateId(),
+        amount: input.amount,
+        note: input.note,
+        proofUrl: input.proofUri,
+        proofType: input.proofUri ? "image" : undefined,
+        createdAt: new Date(),
+        goalId: input.goalId,
+        userId: CURRENT_USER_ID,
+      };
+
+      const goal = goalsStore[goalIndex];
+      const newCurrentValue = goal.currentValue + input.amount;
+      const isCompleted = newCurrentValue >= goal.targetValue;
+      const isSurpassed = newCurrentValue > goal.targetValue;
+
+      goalsStore[goalIndex] = {
+        ...goal,
+        currentValue: newCurrentValue,
+        isCompleted,
+        isSurpassed,
+        completedAt: isCompleted && !goal.completedAt ? new Date() : goal.completedAt,
+        updatedAt: new Date(),
+        updates: [...goal.updates, newUpdate],
+      };
+
+      setGoals([...goalsStore]);
+      setIsLoading(false);
+      return newUpdate;
+    },
+    []
+  );
+
+  const deleteGoal = useCallback(async (goalId: string) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+    goalsStore = goalsStore.filter((g) => g.id !== goalId);
+    setGoals([...goalsStore]);
+    setIsLoading(false);
+  }, []);
+
+  const getGoalById = useCallback((goalId: string) => {
+    return goalsStore.find((g) => g.id === goalId);
+  }, []);
+
+  return {
+    goals,
+    isLoading,
+    createGoal,
+    addGoalUpdate,
+    deleteGoal,
+    getGoalById,
+    refreshGoals,
+  };
+}
+
+export function useGroups() {
+  const [groups, setGroups] = useState<Group[]>(groupsStore);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const refreshGroups = useCallback(() => {
+    setGroups([...groupsStore]);
+  }, []);
+
+  const createGroup = useCallback(async (input: CreateGroupInput): Promise<Group> => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 500));
+
+    const newGroup: Group = {
+      id: generateId(),
+      ...input,
+      inviteCode: generateId().toUpperCase().slice(0, 6),
+      isPublic: input.isPublic ?? false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ownerId: CURRENT_USER_ID,
+      members: [
+        {
+          id: generateId(),
+          role: "admin",
+          joinedAt: new Date(),
+          userId: CURRENT_USER_ID,
+          groupId: "",
+        },
+      ],
+      goals: [],
+    };
+    newGroup.members[0].groupId = newGroup.id;
+
+    groupsStore = [...groupsStore, newGroup];
+    setGroups([...groupsStore]);
+    setIsLoading(false);
+    return newGroup;
+  }, []);
+
+  const joinGroup = useCallback(async (inviteCode: string): Promise<Group | null> => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 500));
+
+    const groupIndex = groupsStore.findIndex(
+      (g) => g.inviteCode.toLowerCase() === inviteCode.toLowerCase()
+    );
+
+    if (groupIndex === -1) {
+      setIsLoading(false);
+      return null;
+    }
+
+    const group = groupsStore[groupIndex];
+    const alreadyMember = group.members.some((m) => m.userId === CURRENT_USER_ID);
+
+    if (!alreadyMember) {
+      const newMember: GroupMember = {
+        id: generateId(),
+        role: "member",
+        joinedAt: new Date(),
+        userId: CURRENT_USER_ID,
+        groupId: group.id,
+      };
+
+      groupsStore[groupIndex] = {
+        ...group,
+        members: [...group.members, newMember],
+        updatedAt: new Date(),
+      };
+    }
+
+    setGroups([...groupsStore]);
+    setIsLoading(false);
+    return groupsStore[groupIndex];
+  }, []);
+
+  const leaveGroup = useCallback(async (groupId: string) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+
+    const groupIndex = groupsStore.findIndex((g) => g.id === groupId);
+    if (groupIndex !== -1) {
+      const group = groupsStore[groupIndex];
+      groupsStore[groupIndex] = {
+        ...group,
+        members: group.members.filter((m) => m.userId !== CURRENT_USER_ID),
+        updatedAt: new Date(),
+      };
+    }
+
+    setGroups([...groupsStore]);
+    setIsLoading(false);
+  }, []);
+
+  const getGroupById = useCallback((groupId: string) => {
+    return groupsStore.find((g) => g.id === groupId);
+  }, []);
+
+  return {
+    groups,
+    isLoading,
+    createGroup,
+    joinGroup,
+    leaveGroup,
+    getGroupById,
+    refreshGroups,
+  };
+}
