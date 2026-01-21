@@ -1,9 +1,8 @@
-import { Home, Target, Users, Settings } from "lucide-react-native";
-import { Link } from "expo-router";
+import { Compass, Info, Twitter, Home } from "lucide-react-native";
 import { Drawer } from "expo-router/drawer";
 import { useThemeColor } from "heroui-native";
 import React, { useCallback } from "react";
-import { Pressable, Text } from "react-native";
+import { Text, View } from "react-native";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -11,6 +10,7 @@ function DrawerLayout() {
   const themeColorForeground = useThemeColor("foreground");
   const themeColorBackground = useThemeColor("background");
   const themeColorMuted = useThemeColor("muted");
+  const themeColorAccent = useThemeColor("accent");
 
   const renderThemeToggle = useCallback(() => <ThemeToggle />, []);
 
@@ -25,49 +25,92 @@ function DrawerLayout() {
         },
         headerRight: renderThemeToggle,
         drawerStyle: { backgroundColor: themeColorBackground },
-        drawerActiveTintColor: themeColorForeground,
+        drawerActiveTintColor: themeColorAccent,
         drawerInactiveTintColor: themeColorMuted,
+        drawerActiveBackgroundColor: themeColorAccent + "15",
       }}
     >
+      {/* Main Tabs - Hidden from drawer, accessed via bottom tabs */}
       <Drawer.Screen
-        name="index"
+        name="(tabs)"
         options={{
-          headerTitle: "LockedIn",
-          drawerLabel: ({ color, focused }) => (
-            <Text style={{ color: focused ? themeColorForeground : themeColorMuted }}>
+          headerShown: false,
+          drawerLabel: ({ focused }) => (
+            <Text style={{ color: focused ? themeColorAccent : themeColorMuted, fontWeight: "500" }}>
               Home
             </Text>
           ),
           drawerIcon: ({ size, focused }) => (
             <Home
               size={size}
-              color={focused ? themeColorForeground : themeColorMuted}
+              color={focused ? themeColorAccent : themeColorMuted}
             />
           ),
         }}
       />
+      
+      {/* Discover Page */}
       <Drawer.Screen
-        name="(tabs)"
+        name="discover"
         options={{
-          headerTitle: "Goals",
+          headerTitle: "Discover",
           drawerLabel: ({ focused }) => (
-            <Text style={{ color: focused ? themeColorForeground : themeColorMuted }}>
-              Goals
+            <Text style={{ color: focused ? themeColorAccent : themeColorMuted, fontWeight: "500" }}>
+              Discover
             </Text>
           ),
           drawerIcon: ({ size, focused }) => (
-            <Target
+            <Compass
               size={size}
-              color={focused ? themeColorForeground : themeColorMuted}
+              color={focused ? themeColorAccent : themeColorMuted}
             />
           ),
-          headerRight: () => (
-            <Link href="/goal/new" asChild>
-              <Pressable className="mr-4">
-                <Target size={22} color={themeColorForeground} />
-              </Pressable>
-            </Link>
+        }}
+      />
+      
+      {/* About Page */}
+      <Drawer.Screen
+        name="about"
+        options={{
+          headerTitle: "About",
+          drawerLabel: ({ focused }) => (
+            <Text style={{ color: focused ? themeColorAccent : themeColorMuted, fontWeight: "500" }}>
+              About
+            </Text>
           ),
+          drawerIcon: ({ size, focused }) => (
+            <Info
+              size={size}
+              color={focused ? themeColorAccent : themeColorMuted}
+            />
+          ),
+        }}
+      />
+      
+      {/* Follow Me Page */}
+      <Drawer.Screen
+        name="follow-me"
+        options={{
+          headerTitle: "Follow Me",
+          drawerLabel: ({ focused }) => (
+            <Text style={{ color: focused ? themeColorAccent : themeColorMuted, fontWeight: "500" }}>
+              Follow Me
+            </Text>
+          ),
+          drawerIcon: ({ size, focused }) => (
+            <Twitter
+              size={size}
+              color={focused ? themeColorAccent : themeColorMuted}
+            />
+          ),
+        }}
+      />
+
+      {/* Hide the old index from drawer */}
+      <Drawer.Screen
+        name="index"
+        options={{
+          drawerItemStyle: { display: "none" },
         }}
       />
     </Drawer>
