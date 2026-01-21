@@ -1,10 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Target, Users, Bell } from "lucide-react-native";
 import { Tabs } from "expo-router";
 import { useThemeColor } from "heroui-native";
 
 export default function TabLayout() {
   const themeColorForeground = useThemeColor("foreground");
   const themeColorBackground = useThemeColor("background");
+  const accentColor = useThemeColor("accent");
 
   return (
     <Tabs
@@ -20,24 +21,27 @@ export default function TabLayout() {
         },
         tabBarStyle: {
           backgroundColor: themeColorBackground,
+          borderTopColor: "transparent",
         },
+        tabBarActiveTintColor: themeColorForeground,
+        tabBarInactiveTintColor: themeColorForeground + "80",
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Goals",
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Target size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="two"
         options={{
-          title: "Explore",
+          title: "Groups",
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <Ionicons name="compass" size={size} color={color} />
+            <Users size={size} color={color} />
           ),
         }}
       />
