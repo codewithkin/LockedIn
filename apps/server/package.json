@@ -15,12 +15,13 @@
     "@hono/zod-validator": "^0.7.6",
     "dotenv": "catalog:",
     "hono": "^4.8.2",
-    "resend": "^6.8.0",
+    "nodemailer": "^7.0.12",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@LockedIn/config": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/nodemailer": "^7.0.5",
     "tsdown": "^0.16.5",
     "typescript": "catalog:"
   }

@@ -1,4 +1,4 @@
-import { Compass, Info, Twitter, Home, Users } from "lucide-react-native";
+import { Compass, Info, Twitter, Home, Users, Bell } from "lucide-react-native";
 import { Drawer } from "expo-router/drawer";
 import { useThemeColor } from "heroui-native";
 import React, { useCallback } from "react";
@@ -61,6 +61,25 @@ function DrawerLayout() {
           ),
           drawerIcon: ({ size, focused }) => (
             <Users
+              size={size}
+              color={focused ? themeColorAccent : themeColorMuted}
+            />
+          ),
+        }}
+      />
+      
+      {/* Notifications Page */}
+      <Drawer.Screen
+        name="notifications"
+        options={{
+          headerTitle: "Notifications",
+          drawerLabel: ({ focused }) => (
+            <Text style={{ color: focused ? themeColorAccent : themeColorMuted, fontWeight: "500" }}>
+              Notifications
+            </Text>
+          ),
+          drawerIcon: ({ size, focused }) => (
+            <Bell
               size={size}
               color={focused ? themeColorAccent : themeColorMuted}
             />

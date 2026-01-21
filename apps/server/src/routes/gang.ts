@@ -4,6 +4,7 @@ import { z } from "zod";
 import { verify } from "hono/jwt";
 import prisma from "@LockedIn/db";
 import { env } from "@LockedIn/env/server";
+import { createNotification } from "../lib/notifications";
 
 type Variables = {
   userId: string;
@@ -33,32 +34,32 @@ const authMiddleware = async (c: any, next: any) => {
 gang.get("/", authMiddleware, async (c) => {
   const userId = c.get("userId");
 
-  // Get all mutual connections where user is either user1 or user2
+  // Get all mutual connections where user is either userA or userB
   const gangConnections = await prisma.gang.findMany({
     where: {
       OR: [
-        { userId: userId },
-        { memberId: userId },
+        { userAId: userId },
+        { userBId: userId },
       ],
     },
     include: {
-      user: {
-        select: { id: true, name: true, email: true, image: true },
+      userA: {
+        select: { id: true, name: true, email: true, avatarUrl: true },
       },
-      member: {
-        select: { id: true, name: true, email: true, image: true },
+      userB: {
+        select: { id: true, name: true, email: true, avatarUrl: true },
       },
     },
   });
 
   // Map to get the other person in each connection
-  const members = gangConnections.map((connection: typeof gangConnections[0]) => {
-    const otherUser = connection.userId === userId ? connection.member : connection.user;
+  const members = gangConnections.map((connection) => {
+    const otherUser = connection.userAId === userId ? connection.userB : connection.userA;
     return {
       id: otherUser.id,
       name: otherUser.name,
       email: otherUser.email,
-      image: otherUser.image,
+      avatarUrl: otherUser.avatarUrl,
       mutualSince: connection.createdAt,
     };
   });
@@ -72,12 +73,12 @@ gang.get("/requests", authMiddleware, async (c) => {
 
   const requests = await prisma.gangRequest.findMany({
     where: {
-      toId: userId,
+      receiverId: userId,
       status: "pending",
     },
     include: {
-      from: {
-        select: { id: true, name: true, email: true, image: true },
+      sender: {
+        select: { id: true, name: true, email: true, avatarUrl: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -92,12 +93,12 @@ gang.get("/requests/sent", authMiddleware, async (c) => {
 
   const requests = await prisma.gangRequest.findMany({
     where: {
-      fromId: userId,
+      senderId: userId,
       status: "pending",
     },
     include: {
-      to: {
-        select: { id: true, name: true, email: true, image: true },
+      receiver: {
+        select: { id: true, name: true, email: true, avatarUrl: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -138,8 +139,8 @@ gang.post(
     const existingGang = await prisma.gang.findFirst({
       where: {
         OR: [
-          { userId: userId, memberId: toUserId },
-          { userId: toUserId, memberId: userId },
+          { userAId: userId, userBId: toUserId },
+          { userAId: toUserId, userBId: userId },
         ],
       },
     });
@@ -152,20 +153,20 @@ gang.post(
     const existingRequest = await prisma.gangRequest.findFirst({
       where: {
         OR: [
-          { fromId: userId, toId: toUserId, status: "pending" },
-          { fromId: toUserId, toId: userId, status: "pending" },
+          { senderId: userId, receiverId: toUserId, status: "pending" },
+          { senderId: toUserId, receiverId: userId, status: "pending" },
         ],
       },
     });
 
     if (existingRequest) {
       // If there's an incoming request from this person, auto-accept
-      if (existingRequest.fromId === toUserId) {
+      if (existingRequest.senderId === toUserId) {
         // Create gang connection
         await prisma.gang.create({
           data: {
-            userId: userId,
-            memberId: toUserId,
+            userAId: userId,
+            userBId: toUserId,
           },
         });
 
@@ -188,9 +189,24 @@ gang.post(
     // Create new request
     const request = await prisma.gangRequest.create({
       data: {
-        fromId: userId,
-        toId: toUserId,
+        senderId: userId,
+        receiverId: toUserId,
       },
+    });
+
+    // Get sender info for notification
+    const sender = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    });
+
+    // Create notification for receiver
+    await createNotification({
+      userId: toUserId,
+      title: "New Gang Request",
+      body: `${sender?.name || sender?.email || "Someone"} wants to join your gang`,
+      type: "gang_request",
+      data: { requestId: request.id, senderId: userId },
     });
 
     return c.json({ success: true, request });
@@ -208,7 +224,7 @@ gang.post(
     const request = await prisma.gangRequest.findFirst({
       where: {
         id: requestId,
-        toId: userId,
+        receiverId: userId,
         status: "pending",
       },
     });
@@ -220,8 +236,8 @@ gang.post(
     // Create gang connection
     await prisma.gang.create({
       data: {
-        userId: request.fromId,
-        memberId: userId,
+        userAId: request.senderId,
+        userBId: userId,
       },
     });
 
@@ -229,6 +245,21 @@ gang.post(
     await prisma.gangRequest.update({
       where: { id: requestId },
       data: { status: "accepted" },
+    });
+
+    // Get accepter info for notification
+    const accepter = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    });
+
+    // Notify sender that request was accepted
+    await createNotification({
+      userId: request.senderId,
+      title: "Gang Request Accepted",
+      body: `${accepter?.name || accepter?.email || "Someone"} accepted your gang request`,
+      type: "gang_accepted",
+      data: { userId },
     });
 
     return c.json({ success: true, message: "Gang connection established!" });
@@ -246,7 +277,7 @@ gang.post(
     const request = await prisma.gangRequest.findFirst({
       where: {
         id: requestId,
-        toId: userId,
+        receiverId: userId,
         status: "pending",
       },
     });
@@ -275,7 +306,7 @@ gang.delete(
     const request = await prisma.gangRequest.findFirst({
       where: {
         id: requestId,
-        fromId: userId,
+        senderId: userId,
         status: "pending",
       },
     });
@@ -303,8 +334,8 @@ gang.delete(
     const gangConnection = await prisma.gang.findFirst({
       where: {
         OR: [
-          { userId: userId, memberId: memberId },
-          { userId: memberId, memberId: userId },
+          { userAId: userId, userBId: memberId },
+          { userAId: memberId, userBId: userId },
         ],
       },
     });
@@ -329,8 +360,8 @@ gang.get("/count/:userId?", authMiddleware, async (c) => {
   const count = await prisma.gang.count({
     where: {
       OR: [
-        { userId: targetUserId },
-        { memberId: targetUserId },
+        { userAId: targetUserId },
+        { userBId: targetUserId },
       ],
     },
   });

@@ -7,6 +7,7 @@ import auth from "./routes/auth";
 import goals from "./routes/goals";
 import groups from "./routes/groups";
 import gang from "./routes/gang";
+import notifications from "./routes/notifications";
 
 const app = new Hono();
 
@@ -30,5 +31,6 @@ app.route("/api/auth", auth);
 app.route("/api/goals", goals);
 app.route("/api/groups", groups);
 app.route("/api/gang", gang);
+app.route("/api/notifications", notifications);
 
 export default app;

@@ -1,12 +1,21 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { sign, verify } from "hono/jwt";
 import prisma from "@LockedIn/db";
 import { env } from "@LockedIn/env/server";
 
-const resend = new Resend(env.RESEND_API_KEY);
+// Create nodemailer transporter
+const transporter = nodemailer.createTransport({
+  host: env.SMTP_HOST,
+  port: env.SMTP_PORT,
+  secure: env.SMTP_SECURE,
+  auth: {
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS,
+  },
+});
 
 const auth = new Hono();
 
@@ -47,8 +56,8 @@ auth.post(
 
     // Send email with magic link
     try {
-      await resend.emails.send({
-        from: "LockedIn <noreply@lockedin.app>",
+      await transporter.sendMail({
+        from: `${env.SMTP_FROM_NAME} <${env.SMTP_FROM_EMAIL}>`,
         to: email,
         subject: "Sign in to LockedIn",
         html: `

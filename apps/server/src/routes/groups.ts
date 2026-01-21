@@ -4,6 +4,7 @@ import { z } from "zod";
 import { verify } from "hono/jwt";
 import prisma from "@LockedIn/db";
 import { env } from "@LockedIn/env/server";
+import { createNotification } from "../lib/notifications";
 
 type Variables = {
   userId: string;
@@ -171,6 +172,23 @@ groups.post(
         role: "member",
       },
     });
+
+    // Get user info for notification
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    });
+
+    // Notify group owner about new member
+    if (group.ownerId !== userId) {
+      await createNotification({
+        userId: group.ownerId,
+        title: "New Group Member",
+        body: `${user?.name || user?.email || "Someone"} joined "${group.name}"`,
+        type: "group_invite",
+        data: { groupId: group.id, newMemberId: userId },
+      });
+    }
 
     // Get updated group
     const updatedGroup = await prisma.group.findUnique({
