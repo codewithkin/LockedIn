@@ -6,6 +6,7 @@ import { logger } from "hono/logger";
 import auth from "./routes/auth";
 import goals from "./routes/goals";
 import groups from "./routes/groups";
+import gang from "./routes/gang";
 
 const app = new Hono();
 
@@ -28,5 +29,6 @@ app.get("/", (c) => {
 app.route("/api/auth", auth);
 app.route("/api/goals", goals);
 app.route("/api/groups", groups);
+app.route("/api/gang", gang);
 
 export default app;
