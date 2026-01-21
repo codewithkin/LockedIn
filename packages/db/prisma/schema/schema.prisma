@@ -1,10 +1,117 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated"
+  provider     = "prisma-client"
+  output       = "../generated"
   moduleFormat = "esm"
-  runtime = "bun"
+  runtime      = "bun"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// User model
+model User {
+  id                String           @id @default(cuid())
+  email             String           @unique
+  name              String?
+  avatarUrl         String?
+  pushToken         String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  goals             Goal[]
+  groupMemberships  GroupMember[]
+  goalUpdates       GoalUpdate[]
+  ownedGroups       Group[]          @relation("GroupOwner")
+  notifications     Notification[]
+}
+
+// Goal model with surpass support
+model Goal {
+  id            String       @id @default(cuid())
+  title         String
+  description   String?
+  targetValue   Float
+  currentValue  Float        @default(0)
+  unit          String       // e.g., "$", "miles", "hours", "books"
+  category      String?      // e.g., "financial", "fitness", "learning"
+  startDate     DateTime     @default(now())
+  endDate       DateTime
+  isCompleted   Boolean      @default(false)
+  isSurpassed   Boolean      @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId       String?
+  group         Group?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  updates       GoalUpdate[]
+
+  @@index([userId])
+  @@index([groupId])
+}
+
+// Goal updates with proof upload
+model GoalUpdate {
+  id          String   @id @default(cuid())
+  amount      Float    // The value added (e.g., $12 earned)
+  note        String?
+  proofUrl    String?  // URL to uploaded image proof
+  proofType   String?  // "image" | "document"
+  createdAt   DateTime @default(now())
+  goalId      String
+  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([userId])
+}
+
+// Group model for accountability groups
+model Group {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  avatarUrl   String?
+  inviteCode  String        @unique @default(cuid())
+  isPublic    Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  ownerId     String
+  owner       User          @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     GroupMember[]
+  goals       Goal[]
+
+  @@index([ownerId])
+}
+
+// Group membership
+model GroupMember {
+  id        String   @id @default(cuid())
+  role      String   @default("member") // "admin" | "member"
+  joinedAt  DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([userId])
+  @@index([groupId])
+}
+
+// Notification model for push notifications
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  type      String   // "goal_completed" | "goal_surpassed" | "group_invite" | "goal_update"
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
