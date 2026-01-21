@@ -29,6 +29,9 @@ model User {
   gangRequestsReceived GangRequest[] @relation("GangRequestReceiver")
   gangMembershipsA     Gang[]        @relation("GangUserA")
   gangMembershipsB     Gang[]        @relation("GangUserB")
+  // Crew relationships
+  ownedCrews        Crew[]           @relation("CrewOwner")
+  crewMemberships   CrewMember[]
   // Hidden groups
   hiddenGroups      HiddenGroup[]
 }
@@ -168,4 +171,92 @@ model HiddenGroup {
 
   @@unique([userId, groupId])
   @@index([userId])
+}
+
+// Crew model - A gang/tribe of people containing groups, goals, and members
+// This is the enhanced "Gang" concept - a community/crew that members belong to
+model Crew {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  avatarUrl   String?
+  coverUrl    String?
+  inviteCode  String       @unique @default(cuid())
+  isPublic    Boolean      @default(false)
+  maxMembers  Int          @default(50)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  ownerId     String
+  owner       User         @relation("CrewOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     CrewMember[]
+  groups      CrewGroup[]
+  goals       CrewGoal[]
+  messages    CrewMessage[]
+  
+  @@index([ownerId])
+  @@index([isPublic])
+}
+
+// Crew membership - Users who belong to a crew
+model CrewMember {
+  id        String   @id @default(cuid())
+  role      String   @default("member") // "owner" | "admin" | "moderator" | "member"
+  nickname  String?  // Optional crew-specific nickname
+  joinedAt  DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crewId    String
+  crew      Crew     @relation(fields: [crewId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, crewId])
+  @@index([userId])
+  @@index([crewId])
+}
+
+// Crew groups - Accountability groups that belong to a crew
+model CrewGroup {
+  id        String   @id @default(cuid())
+  crewId    String
+  crew      Crew     @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  groupId   String
+  addedAt   DateTime @default(now())
+  
+  @@unique([crewId, groupId])
+  @@index([crewId])
+  @@index([groupId])
+}
+
+// Crew goals - Shared goals for the entire crew
+model CrewGoal {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  targetValue   Float
+  currentValue  Float    @default(0)
+  unit          String
+  status        String   @default("active") // "active" | "completed" | "failed"
+  startDate     DateTime @default(now())
+  endDate       DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  crewId        String
+  crew          Crew     @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  createdById   String
+
+  @@index([crewId])
+  @@index([status])
+}
+
+// Crew messages - Chat/activity feed for the crew
+model CrewMessage {
+  id        String   @id @default(cuid())
+  content   String
+  type      String   @default("message") // "message" | "announcement" | "goal_update" | "member_joined" | "milestone"
+  createdAt DateTime @default(now())
+  crewId    String
+  crew      Crew     @relation(fields: [crewId], references: [id], onDelete: Cascade)
+  authorId  String
+
+  @@index([crewId])
+  @@index([createdAt])
 }
