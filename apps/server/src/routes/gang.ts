@@ -52,7 +52,7 @@ gang.get("/", authMiddleware, async (c) => {
   });
 
   // Map to get the other person in each connection
-  const members = gangConnections.map((connection) => {
+  const members = gangConnections.map((connection: typeof gangConnections[0]) => {
     const otherUser = connection.userId === userId ? connection.member : connection.user;
     return {
       id: otherUser.id,
