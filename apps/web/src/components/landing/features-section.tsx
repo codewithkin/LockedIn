@@ -56,29 +56,33 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section className="py-24 bg-muted/30">
-      <div className="container mx-auto px-4">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Everything You Need to{" "}
-            <span className="text-primary">Lock In</span>
+    <section className="py-24 bg-muted/30 relative overflow-hidden">
+      {/* blob background */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/20 rounded-full blur-[80px] pointer-events-none" />
+
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 tracking-tight">
+            Everything You Need <br />
+            <span className="text-primary">Nothing You Don't.</span>
           </h2>
-          <p className="text-lg text-muted-foreground">
-            From goal setting to accountability, LockedIn has all the features you need to achieve your goals and stay locked in together.
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            Comprehensive goal tracking and accountability designed with simplicity and effectiveness in mind.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {features.map((feature) => (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          {features.map((feature, i) => (
             <div
               key={feature.title}
-              className="bg-background rounded-2xl p-6 border hover:shadow-lg transition-shadow"
+              className="bg-card rounded-3xl p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-border/50 group"
             >
-              <div className={`w-12 h-12 rounded-xl ${feature.bgColor} flex items-center justify-center mb-4`}>
-                <feature.icon className={`w-6 h-6 ${feature.color}`} />
+              <div className={`w-14 h-14 rounded-2xl ${feature.bgColor} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                <feature.icon className={`w-7 h-7 ${feature.color}`} />
               </div>
-              <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground text-sm">{feature.description}</p>
+              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
+              <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>
