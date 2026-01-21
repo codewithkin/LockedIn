@@ -296,7 +296,7 @@ export default function CockpitScreen() {
               </Text>
             </View>
             <Pressable
-              onPress={() => router.push("/notifications")}
+              onPress={() => router.push({ pathname: "/(drawer)/(tabs)/settings" as any })}
               className="w-10 h-10 rounded-full bg-muted/20 items-center justify-center"
             >
               <Bell size={20} color={foregroundColor} />
@@ -392,7 +392,7 @@ export default function CockpitScreen() {
         <SlideIn delay={400}>
           <View className="flex-row items-center justify-between mb-3">
             <Text className="text-foreground font-semibold text-lg">Recent Goals</Text>
-            <Pressable onPress={() => router.push("/(tabs)/goals")}>
+            <Pressable onPress={() => router.push({ pathname: "/(drawer)/(tabs)/goals" as any })}>
               <Text className="text-accent text-sm font-medium">See All</Text>
             </Pressable>
           </View>

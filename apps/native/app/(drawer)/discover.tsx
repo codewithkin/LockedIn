@@ -184,7 +184,7 @@ function ProfileCard({
 
   return (
     <SlideIn delay={index * 50}>
-      <Pressable onPress={() => router.push(`/profile/${profile.id}`)}>
+      <Pressable onPress={() => router.push({ pathname: `/profile/[id]`, params: { id: profile.id } } as any)}>
         {({ pressed }) => (
           <MotiView animate={{ scale: pressed ? 0.98 : 1 }} transition={{ type: "timing", duration: 100 }}>
             <Surface variant="secondary" className="p-4 rounded-2xl mb-3">

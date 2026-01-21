@@ -1,6 +1,6 @@
 import { MotiView } from "moti";
 import { router } from "expo-router";
-import { Surface, Button, useThemeColor, Input } from "heroui-native";
+import { Surface, Button, useThemeColor } from "heroui-native";
 import {
   User,
   Mail,
@@ -154,7 +154,7 @@ function EditableField({
 }
 
 export default function ProfileScreen() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, signOut, isLoading } = useAuth();
 
   const foregroundColor = useThemeColor("foreground");
   const accentColor = useThemeColor("accent");
@@ -176,7 +176,7 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: logout },
+      { text: "Sign Out", style: "destructive", onPress: signOut },
     ]);
   };
 
@@ -263,7 +263,7 @@ export default function ProfileScreen() {
                 icon={Users}
                 color={warningColor}
                 index={2}
-                onPress={() => router.push("/gang")}
+                onPress={() => router.push({ pathname: "/gang" as any })}
               />
             </View>
           </View>
@@ -320,7 +320,7 @@ export default function ProfileScreen() {
 
         {/* Gang Section */}
         <SlideIn delay={300}>
-          <Pressable onPress={() => router.push("/gang")}>
+          <Pressable onPress={() => router.push({ pathname: "/gang" as any })}>
             {({ pressed }) => (
               <MotiView animate={{ scale: pressed ? 0.98 : 1 }} transition={{ type: "timing", duration: 100 }}>
                 <Surface variant="secondary" className="p-4 rounded-2xl mb-3">

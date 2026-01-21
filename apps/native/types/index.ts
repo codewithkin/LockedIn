@@ -1,4 +1,7 @@
 // Goal types
+export type GoalStatus = "active" | "completed" | "failed" | "paused" | "given_up";
+export type GoalTimeframe = "daily" | "weekly" | "monthly" | "custom";
+
 export interface Goal {
   id: string;
   title: string;
@@ -7,6 +10,9 @@ export interface Goal {
   currentValue: number;
   unit: string;
   category?: string;
+  status?: GoalStatus;
+  timeframe?: GoalTimeframe;
+  coverImageUrl?: string;
   startDate: Date;
   endDate: Date;
   isCompleted: boolean;
@@ -36,6 +42,7 @@ export interface CreateGoalInput {
   targetValue: number;
   unit: string;
   category?: string;
+  timeframe?: GoalTimeframe;
   endDate: Date;
   groupId?: string;
 }
@@ -83,6 +90,8 @@ export interface User {
   email: string;
   name?: string;
   avatarUrl?: string;
+  image?: string;
+  isPublic?: boolean;
   pushToken?: string;
   createdAt: Date;
   updatedAt: Date;

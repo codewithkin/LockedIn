@@ -116,7 +116,7 @@ export default function NewGoalScreen() {
   const [targetValue, setTargetValue] = useState("");
   const [unit, setUnit] = useState("$");
   const [category, setCategory] = useState("financial");
-  const [timeframe, setTimeframe] = useState("monthly");
+  const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly" | "custom">("monthly");
   const [endDate, setEndDate] = useState(() => {
     const date = new Date();
     date.setMonth(date.getMonth() + 1);
@@ -243,7 +243,7 @@ export default function NewGoalScreen() {
               {TIMEFRAME_OPTIONS.map((option) => (
                 <Pressable
                   key={option.value}
-                  onPress={() => setTimeframe(option.value)}
+                  onPress={() => setTimeframe(option.value as "daily" | "weekly" | "monthly" | "custom")}
                 >
                   <MotiView
                     animate={{

@@ -81,7 +81,7 @@ function GangMemberCard({
 
   return (
     <SlideIn delay={index * 50}>
-      <Pressable onPress={() => router.push(`/profile/${member.id}`)}>
+      <Pressable onPress={() => router.push({ pathname: `/profile/[id]`, params: { id: member.id } } as any)}>
         {({ pressed }) => (
           <MotiView animate={{ scale: pressed ? 0.98 : 1 }} transition={{ type: "timing", duration: 100 }}>
             <Surface variant="secondary" className="p-4 rounded-2xl mb-3">
@@ -362,7 +362,7 @@ export default function GangScreen() {
                       : "Send requests to build your gang"}
                   </Text>
                   {!searchQuery && (
-                    <Button size="sm" className="mt-4" onPress={() => router.push("/discover")}>
+                    <Button size="sm" className="mt-4" onPress={() => router.push({ pathname: "/(drawer)/discover" as any })}>
                       <UserPlus size={16} color="white" />
                       <Button.Label className="ml-1">Find People</Button.Label>
                     </Button>
