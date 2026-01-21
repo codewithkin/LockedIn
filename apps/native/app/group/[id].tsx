@@ -140,7 +140,6 @@ export default function GroupDetailScreen() {
             <View className="flex-row justify-center gap-3 mb-4">
               <Chip
                 size="sm"
-                variant="flat"
                 color={group.isPublic ? "success" : "default"}
               >
                 {group.isPublic ? (
@@ -152,7 +151,7 @@ export default function GroupDetailScreen() {
                   {group.isPublic ? "Public" : "Private"}
                 </Chip.Label>
               </Chip>
-              <Chip size="sm" variant="flat">
+              <Chip size="sm">
                 <Users size={12} color={foregroundColor} />
                 <Chip.Label className="ml-1">
                   {group.members.length} members

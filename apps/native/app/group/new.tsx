@@ -1,8 +1,8 @@
 import { MotiView } from "moti";
 import { Stack, router } from "expo-router";
-import { Button, Surface, Input, useThemeColor } from "heroui-native";
+import { Button, Surface, useThemeColor } from "heroui-native";
 import { Users, FileText, Globe, Lock, X } from "lucide-react-native";
-import { Text, View, Pressable, Switch } from "react-native";
+import { Text, View, Pressable, Switch, TextInput } from "react-native";
 import { useState } from "react";
 
 import { Container } from "@/components/container";
@@ -67,11 +67,11 @@ export default function NewGroupScreen() {
                 Group Name *
               </Text>
             </View>
-            <Input
+            <TextInput
               placeholder="e.g., Fitness Warriors"
               value={name}
               onChangeText={setName}
-              className="bg-background"
+              style={{ backgroundColor: 'transparent', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', color: foregroundColor }}
             />
           </Surface>
         </SlideIn>
@@ -85,13 +85,13 @@ export default function NewGroupScreen() {
                 Description (optional)
               </Text>
             </View>
-            <Input
+            <TextInput
               placeholder="What's this group about?"
               value={description}
               onChangeText={setDescription}
               multiline
               numberOfLines={3}
-              className="bg-background"
+              style={{ backgroundColor: 'transparent', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', color: foregroundColor }}
             />
           </Surface>
         </SlideIn>
@@ -156,7 +156,7 @@ export default function NewGroupScreen() {
           <Button
             size="lg"
             onPress={handleCreate}
-            disabled={!isValid || isLoading}
+            isDisabled={!isValid || isLoading}
           >
             <Users size={18} color="white" />
             <Button.Label className="ml-2">

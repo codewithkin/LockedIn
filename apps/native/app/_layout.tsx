@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { AppThemeProvider } from "@/contexts/app-theme-context";
+import { AuthProvider } from "@/contexts/auth-context";
 import { registerForPushNotificationsAsync } from "@/lib/notifications";
 
 export const unstable_settings = {
@@ -16,6 +17,9 @@ function StackLayout() {
   return (
     <Stack screenOptions={{}}>
       <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="auth/sign-in" options={{ headerShown: false }} />
+      <Stack.Screen name="auth/verify" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ title: "Modal", presentation: "modal" }} />
       <Stack.Screen
         name="goal/[id]"
@@ -56,7 +60,9 @@ export default function Layout() {
       <KeyboardProvider>
         <AppThemeProvider>
           <HeroUINativeProvider>
-            <StackLayout />
+            <AuthProvider>
+              <StackLayout />
+            </AuthProvider>
           </HeroUINativeProvider>
         </AppThemeProvider>
       </KeyboardProvider>

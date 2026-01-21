@@ -1,8 +1,8 @@
 import { MotiView } from "moti";
 import { Stack, router } from "expo-router";
-import { Button, Surface, Input, useThemeColor } from "heroui-native";
+import { Button, Surface, useThemeColor } from "heroui-native";
 import { UserPlus, Hash, X, Search, CheckCircle, XCircle } from "lucide-react-native";
-import { Text, View, Pressable, Alert } from "react-native";
+import { Text, View, Pressable, Alert, TextInput } from "react-native";
 import { useState } from "react";
 
 import { Container } from "@/components/container";
@@ -82,12 +82,12 @@ export default function JoinGroupScreen() {
                     Invite Code
                   </Text>
                 </View>
-                <Input
+                <TextInput
                   placeholder="Enter invite code (e.g., FIT2026)"
                   value={inviteCode}
-                  onChangeText={(text) => setInviteCode(text.toUpperCase())}
+                  onChangeText={(text: string) => setInviteCode(text.toUpperCase())}
                   autoCapitalize="characters"
-                  className="bg-background font-mono text-center text-lg tracking-widest"
+                  style={{ backgroundColor: 'transparent', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', color: foregroundColor, fontFamily: 'monospace', textAlign: 'center', fontSize: 18, letterSpacing: 4 }}
                 />
                 <Text className="text-muted text-xs mt-2 text-center">
                   Ask the group owner for the invite code
@@ -100,7 +100,7 @@ export default function JoinGroupScreen() {
               <Button
                 size="lg"
                 onPress={handleJoin}
-                disabled={!isValid || isLoading}
+                isDisabled={!isValid || isLoading}
               >
                 <Search size={18} color="white" />
                 <Button.Label className="ml-2">

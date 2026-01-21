@@ -1,32 +1,33 @@
 import { MotiView, MotiText, AnimatePresence } from "moti";
-import type { MotiViewProps } from "moti";
 import { type ReactNode } from "react";
 
-interface FadeInProps extends MotiViewProps {
+interface FadeInProps {
   children: ReactNode;
   delay?: number;
   duration?: number;
+  className?: string;
 }
 
-export function FadeIn({ children, delay = 0, duration = 400, ...props }: FadeInProps) {
+export function FadeIn({ children, delay = 0, duration = 400, className }: FadeInProps) {
   return (
     <MotiView
       from={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ type: "timing", duration, delay }}
-      {...props}
+      className={className}
     >
       {children}
     </MotiView>
   );
 }
 
-interface SlideInProps extends MotiViewProps {
+interface SlideInProps {
   children: ReactNode;
   delay?: number;
   duration?: number;
   direction?: "left" | "right" | "up" | "down";
   distance?: number;
+  className?: string;
 }
 
 export function SlideIn({
@@ -35,7 +36,7 @@ export function SlideIn({
   duration = 400,
   direction = "up",
   distance = 20,
-  ...props
+  className,
 }: SlideInProps) {
   const getTranslation = () => {
     switch (direction) {
@@ -55,18 +56,19 @@ export function SlideIn({
       from={{ opacity: 0, ...getTranslation() }}
       animate={{ opacity: 1, translateX: 0, translateY: 0 }}
       transition={{ type: "timing", duration, delay }}
-      {...props}
+      className={className}
     >
       {children}
     </MotiView>
   );
 }
 
-interface ScaleInProps extends MotiViewProps {
+interface ScaleInProps {
   children: ReactNode;
   delay?: number;
   duration?: number;
   initialScale?: number;
+  className?: string;
 }
 
 export function ScaleIn({
@@ -74,14 +76,14 @@ export function ScaleIn({
   delay = 0,
   duration = 300,
   initialScale = 0.9,
-  ...props
+  className,
 }: ScaleInProps) {
   return (
     <MotiView
       from={{ opacity: 0, scale: initialScale }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: "spring", damping: 15, delay }}
-      {...props}
+      transition={{ type: "spring", damping: 15 }}
+      className={className}
     >
       {children}
     </MotiView>
@@ -106,17 +108,18 @@ export function Stagger({ children, staggerDelay = 100, initialDelay = 0 }: Stag
   );
 }
 
-interface PressableScaleProps extends MotiViewProps {
+interface PressableScaleProps {
   children: ReactNode;
   isPressed?: boolean;
+  className?: string;
 }
 
-export function PressableScale({ children, isPressed, ...props }: PressableScaleProps) {
+export function PressableScale({ children, isPressed, className }: PressableScaleProps) {
   return (
     <MotiView
       animate={{ scale: isPressed ? 0.97 : 1 }}
       transition={{ type: "timing", duration: 100 }}
-      {...props}
+      className={className}
     >
       {children}
     </MotiView>
@@ -153,12 +156,13 @@ export function AnimatedProgressBar({
   );
 }
 
-interface PulseProps extends MotiViewProps {
+interface PulseProps {
   children: ReactNode;
   isActive?: boolean;
+  className?: string;
 }
 
-export function Pulse({ children, isActive = true, ...props }: PulseProps) {
+export function Pulse({ children, isActive = true, className }: PulseProps) {
   return (
     <MotiView
       animate={{
@@ -169,7 +173,7 @@ export function Pulse({ children, isActive = true, ...props }: PulseProps) {
         duration: 1000,
         loop: isActive,
       }}
-      {...props}
+      className={className}
     >
       {children}
     </MotiView>

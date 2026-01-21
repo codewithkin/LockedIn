@@ -1,6 +1,6 @@
 import { MotiView } from "moti";
 import { Stack, useLocalSearchParams, router } from "expo-router";
-import { Button, Surface, Input, useThemeColor } from "heroui-native";
+import { Button, Surface, useThemeColor } from "heroui-native";
 import {
   TrendingUp,
   Camera,
@@ -10,7 +10,7 @@ import {
   Check,
   Trash2,
 } from "lucide-react-native";
-import { Text, View, Pressable, Image, Alert } from "react-native";
+import { Text, View, Pressable, Image, Alert, TextInput } from "react-native";
 import { useState, useMemo } from "react";
 
 import { Container } from "@/components/container";
@@ -149,12 +149,12 @@ export default function GoalUpdateScreen() {
                 Progress Amount *
               </Text>
             </View>
-            <Input
+            <TextInput
               placeholder={`How much ${goal.unit} did you achieve?`}
               value={amount}
               onChangeText={setAmount}
               keyboardType="numeric"
-              className="bg-background"
+              style={{ backgroundColor: 'transparent', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', color: foregroundColor }}
             />
             {amount && parseFloat(amount) > 0 && (
               <MotiView
@@ -199,13 +199,13 @@ export default function GoalUpdateScreen() {
                 Note (optional)
               </Text>
             </View>
-            <Input
+            <TextInput
               placeholder="Add a note about this progress..."
               value={note}
               onChangeText={setNote}
               multiline
               numberOfLines={2}
-              className="bg-background"
+              style={{ backgroundColor: 'transparent', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', color: foregroundColor }}
             />
           </Surface>
         </SlideIn>
@@ -268,7 +268,7 @@ export default function GoalUpdateScreen() {
           <Button
             size="lg"
             onPress={handleSubmit}
-            disabled={!isValid || isLoading}
+            isDisabled={!isValid || isLoading}
           >
             <Check size={18} color="white" />
             <Button.Label className="ml-2">

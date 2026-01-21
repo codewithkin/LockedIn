@@ -57,7 +57,6 @@ export function GroupCard({ group, index = 0, currentUserId = "user_1" }: GroupC
                   </View>
                   <Chip
                     size="sm"
-                    variant="flat"
                     color={group.isPublic ? "success" : "default"}
                   >
                     {group.isPublic ? (

@@ -74,7 +74,6 @@ export function GoalCard({ goal, index = 0 }: GoalCardProps) {
                   <Chip
                     size="sm"
                     color={getStatusColor()}
-                    variant="flat"
                   >
                     <Chip.Label>{getStatusText()}</Chip.Label>
                   </Chip>

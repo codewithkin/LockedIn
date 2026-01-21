@@ -1,6 +1,6 @@
 import { MotiView } from "moti";
 import { Stack, router } from "expo-router";
-import { Button, Surface, Input, useThemeColor } from "heroui-native";
+import { Button, Surface, useThemeColor } from "heroui-native";
 import {
   Target,
   DollarSign,
@@ -9,7 +9,7 @@ import {
   Tag,
   X,
 } from "lucide-react-native";
-import { Text, View, Pressable, ScrollView } from "react-native";
+import { Text, View, Pressable, ScrollView, TextInput } from "react-native";
 import { useState } from "react";
 
 import { Container } from "@/components/container";
@@ -85,11 +85,11 @@ export default function NewGoalScreen() {
                 Goal Title *
               </Text>
             </View>
-            <Input
+            <TextInput
               placeholder="e.g., Save $500 this month"
               value={title}
               onChangeText={setTitle}
-              className="bg-background"
+              style={{ backgroundColor: 'transparent', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', color: foregroundColor }}
             />
           </Surface>
         </SlideIn>
@@ -103,13 +103,13 @@ export default function NewGoalScreen() {
                 Description (optional)
               </Text>
             </View>
-            <Input
+            <TextInput
               placeholder="Add more details about your goal..."
               value={description}
               onChangeText={setDescription}
               multiline
               numberOfLines={3}
-              className="bg-background"
+              style={{ backgroundColor: 'transparent', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', color: foregroundColor }}
             />
           </Surface>
         </SlideIn>
@@ -124,12 +124,12 @@ export default function NewGoalScreen() {
               </Text>
             </View>
             <View className="flex-row gap-3">
-              <Input
+              <TextInput
                 placeholder="500"
                 value={targetValue}
                 onChangeText={setTargetValue}
                 keyboardType="numeric"
-                className="bg-background flex-1"
+                style={{ backgroundColor: 'transparent', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', color: foregroundColor, flex: 1 }}
               />
               <ScrollView
                 horizontal
@@ -204,11 +204,11 @@ export default function NewGoalScreen() {
                 Target Date *
               </Text>
             </View>
-            <Input
+            <TextInput
               placeholder="YYYY-MM-DD"
               value={endDate}
               onChangeText={setEndDate}
-              className="bg-background"
+              style={{ backgroundColor: 'transparent', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', color: foregroundColor }}
             />
             <Text className="text-muted text-xs mt-2">
               Format: YYYY-MM-DD (e.g., 2026-02-15)
@@ -221,7 +221,7 @@ export default function NewGoalScreen() {
           <Button
             size="lg"
             onPress={handleCreate}
-            disabled={!isValid || isLoading}
+            isDisabled={!isValid || isLoading}
             className="mb-4"
           >
             <Target size={18} color="white" />

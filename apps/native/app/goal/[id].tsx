@@ -133,7 +133,6 @@ export default function GoalDetailScreen() {
                     ? "danger"
                     : "default"
                 }
-                variant="flat"
               >
                 <Chip.Label>
                   {goal.isSurpassed
@@ -180,7 +179,7 @@ export default function GoalDetailScreen() {
                 </Text>
               </View>
               {goal.category && (
-                <Chip size="sm" variant="flat">
+                <Chip size="sm">
                   <Chip.Label className="capitalize">{goal.category}</Chip.Label>
                 </Chip>
               )}

@@ -1,5 +1,9 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { Goal, GoalUpdate, Group, GroupMember, CreateGoalInput, CreateGoalUpdateInput, CreateGroupInput } from "@/types";
+import { goalsApi, groupsApi, getToken } from "@/lib/api";
+
+// Mode can be "mock" or "api" - set to "api" when connected to backend
+const USE_API = false;
 
 // Generate unique IDs
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -184,13 +188,80 @@ let groupsStore = [...initialGroups];
 export function useGoals() {
   const [goals, setGoals] = useState<Goal[]>(goalsStore);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch goals on mount if using API
+  useEffect(() => {
+    if (USE_API) {
+      fetchGoalsFromApi();
+    }
+  }, []);
+
+  const fetchGoalsFromApi = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const token = await getToken();
+      if (!token) {
+        setGoals([]);
+        return;
+      }
+      const response = await goalsApi.getAll();
+      if (response.success && response.goals) {
+        // Convert API dates to Date objects
+        const fetchedGoals = response.goals.map((g: any) => ({
+          ...g,
+          startDate: new Date(g.startDate),
+          endDate: new Date(g.endDate),
+          createdAt: new Date(g.createdAt),
+          updatedAt: new Date(g.updatedAt),
+          completedAt: g.completedAt ? new Date(g.completedAt) : undefined,
+          updates: g.updates?.map((u: any) => ({
+            ...u,
+            createdAt: new Date(u.createdAt),
+          })) || [],
+        }));
+        setGoals(fetchedGoals);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch goals");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const refreshGoals = useCallback(() => {
-    setGoals([...goalsStore]);
+    if (USE_API) {
+      fetchGoalsFromApi();
+    } else {
+      setGoals([...goalsStore]);
+    }
   }, []);
 
   const createGoal = useCallback(async (input: CreateGoalInput): Promise<Goal> => {
     setIsLoading(true);
+    
+    if (USE_API) {
+      try {
+        const response = await goalsApi.create({
+          title: input.title,
+          description: input.description,
+          targetValue: input.targetValue,
+          unit: input.unit,
+          category: input.category,
+          endDate: input.endDate instanceof Date ? input.endDate.toISOString() : input.endDate,
+          groupId: input.groupId,
+        });
+        if (response.success && response.goal) {
+          await fetchGoalsFromApi();
+          return response.goal as any;
+        }
+        throw new Error("Failed to create goal");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
     await new Promise((r) => setTimeout(r, 500)); // Simulate API delay
 
     const newGoal: Goal = {
@@ -215,6 +286,25 @@ export function useGoals() {
   const addGoalUpdate = useCallback(
     async (input: CreateGoalUpdateInput): Promise<GoalUpdate> => {
       setIsLoading(true);
+      
+      if (USE_API) {
+        try {
+          const response = await goalsApi.addUpdate(input.goalId, {
+            amount: input.amount,
+            note: input.note,
+            proofUrl: input.proofUri,
+            proofType: input.proofUri ? "image" : undefined,
+          });
+          if (response.success && response.update) {
+            await fetchGoalsFromApi();
+            return response.update as any;
+          }
+          throw new Error("Failed to add update");
+        } finally {
+          setIsLoading(false);
+        }
+      }
+
       await new Promise((r) => setTimeout(r, 500));
 
       const goalIndex = goalsStore.findIndex((g) => g.id === input.goalId);
@@ -255,6 +345,17 @@ export function useGoals() {
 
   const deleteGoal = useCallback(async (goalId: string) => {
     setIsLoading(true);
+    
+    if (USE_API) {
+      try {
+        await goalsApi.delete(goalId);
+        await fetchGoalsFromApi();
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     await new Promise((r) => setTimeout(r, 300));
     goalsStore = goalsStore.filter((g) => g.id !== goalId);
     setGoals([...goalsStore]);
@@ -262,12 +363,16 @@ export function useGoals() {
   }, []);
 
   const getGoalById = useCallback((goalId: string) => {
+    if (USE_API) {
+      return goals.find((g) => g.id === goalId);
+    }
     return goalsStore.find((g) => g.id === goalId);
-  }, []);
+  }, [goals]);
 
   return {
     goals,
     isLoading,
+    error,
     createGoal,
     addGoalUpdate,
     deleteGoal,
