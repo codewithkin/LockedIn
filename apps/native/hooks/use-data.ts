@@ -489,3 +489,122 @@ export function useGroups() {
     refreshGroups,
   };
 }
+
+// ============== Gang Hook ==============
+
+type GangMember = {
+  id: string;
+  name: string;
+  email: string;
+  image?: string;
+  mutualSince: Date;
+};
+
+type GangRequest = {
+  id: string;
+  fromUser: {
+    id: string;
+    name: string;
+    email: string;
+    image?: string;
+  };
+  createdAt: Date;
+};
+
+// Mock gang data
+let gangMembersStore: GangMember[] = [
+  { id: "gang_1", name: "Alex Chen", email: "alex@example.com", mutualSince: new Date("2025-01-15") },
+  { id: "gang_2", name: "Sarah Johnson", email: "sarah@example.com", mutualSince: new Date("2025-01-20") },
+  { id: "gang_3", name: "Mike Wilson", email: "mike@example.com", mutualSince: new Date("2025-02-01") },
+];
+
+let gangRequestsStore: GangRequest[] = [
+  {
+    id: "req_1",
+    fromUser: { id: "user_5", name: "John Doe", email: "john@example.com" },
+    createdAt: new Date("2025-02-18"),
+  },
+];
+
+export function useGang() {
+  const [members, setMembers] = useState<GangMember[]>(gangMembersStore);
+  const [requests, setRequests] = useState<GangRequest[]>(gangRequestsStore);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const refreshGang = useCallback(async () => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+    setMembers([...gangMembersStore]);
+    setRequests([...gangRequestsStore]);
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    refreshGang();
+  }, [refreshGang]);
+
+  const sendRequest = useCallback(async (toUserId: string) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 500));
+    // In real app, this would call the API
+    setIsLoading(false);
+    return true;
+  }, []);
+
+  const acceptRequest = useCallback(async (requestId: string) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+
+    const request = gangRequestsStore.find((r) => r.id === requestId);
+    if (request) {
+      // Add to members
+      const newMember: GangMember = {
+        id: request.fromUser.id,
+        name: request.fromUser.name,
+        email: request.fromUser.email,
+        image: request.fromUser.image,
+        mutualSince: new Date(),
+      };
+      gangMembersStore = [...gangMembersStore, newMember];
+
+      // Remove from requests
+      gangRequestsStore = gangRequestsStore.filter((r) => r.id !== requestId);
+
+      setMembers([...gangMembersStore]);
+      setRequests([...gangRequestsStore]);
+    }
+
+    setIsLoading(false);
+  }, []);
+
+  const declineRequest = useCallback(async (requestId: string) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+
+    gangRequestsStore = gangRequestsStore.filter((r) => r.id !== requestId);
+    setRequests([...gangRequestsStore]);
+
+    setIsLoading(false);
+  }, []);
+
+  const removeMember = useCallback(async (memberId: string) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+
+    gangMembersStore = gangMembersStore.filter((m) => m.id !== memberId);
+    setMembers([...gangMembersStore]);
+
+    setIsLoading(false);
+  }, []);
+
+  return {
+    members,
+    requests,
+    isLoading,
+    sendRequest,
+    acceptRequest,
+    declineRequest,
+    removeMember,
+    refreshGang,
+  };
+}
