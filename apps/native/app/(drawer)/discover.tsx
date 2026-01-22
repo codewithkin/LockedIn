@@ -12,9 +12,11 @@ import { useState, useMemo } from "react";
 
 import { Container } from "@/components/container";
 import { FadeIn, SlideIn } from "@/components/animations";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Mock data for public groups
 const PUBLIC_GROUPS = [
@@ -70,7 +72,7 @@ const PUBLIC_PEOPLE = [
 ];
 
 export default function DiscoverPage() {
-  const [tabIndex, setTabIndex] = useState(0);
+  const [selectedTab, setSelectedTab] = useState("groups");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredGroups = useMemo(
@@ -118,144 +120,159 @@ export default function DiscoverPage() {
 
         {/* Tabs */}
         <SlideIn delay={100}>
-          <View className="flex-row px-6 mb-6 gap-2">
-            <Pressable
-              onPress={() => setTabIndex(0)}
-              className={`flex-1 py-3 px-4 rounded-lg ${
-                tabIndex === 0 ? "bg-accent" : "bg-muted/20"
-              }`}
-            >
-              <Text
-                className={`text-center font-semibold ${
-                  tabIndex === 0 ? "text-white" : "text-foreground"
-                }`}
-              >
-                Groups
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setTabIndex(1)}
-              className={`flex-1 py-3 px-4 rounded-lg ${
-                tabIndex === 1 ? "bg-accent" : "bg-muted/20"
-              }`}
-            >
-              <Text
-                className={`text-center font-semibold ${
-                  tabIndex === 1 ? "text-white" : "text-foreground"
-                }`}
-              >
-                People
-              </Text>
-            </Pressable>
+          <View className="px-6 mb-6">
+            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+              <TabsList className="bg-card">
+                <TabsTrigger value="groups">
+                  <Text className="text-sm">Groups</Text>
+                </TabsTrigger>
+                <TabsTrigger value="people">
+                  <Text className="text-sm">People</Text>
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Groups Tab */}
+              <TabsContent value="groups">
+                <View className="gap-3 mt-4">
+                  {filteredGroups.length > 0 ? (
+                    filteredGroups.map((group) => (
+                      <Card key={group.id}>
+                        <CardContent className="py-4">
+                          <View className="gap-3">
+                            <View className="flex-row items-start justify-between gap-2">
+                              <View className="flex-1">
+                                <Text className="text-base font-semibold text-foreground">
+                                  {group.name}
+                                </Text>
+                                <Text className="text-xs text-muted mt-0.5">
+                                  {group.description}
+                                </Text>
+                              </View>
+                              <Button className="px-4 py-2 rounded-lg">
+                                <Text className="text-white font-semibold text-sm">Join</Text>
+                              </Button>
+                            </View>
+
+                            <View className="flex-row gap-3">
+                              <Badge className="bg-muted">
+                                <Users size={12} color="#666" />
+                                <Text className="text-foreground text-xs ml-1">
+                                  {group.memberCount} members
+                                </Text>
+                              </Badge>
+                              <Badge className="bg-muted">
+                                <Target size={12} color="#666" />
+                                <Text className="text-foreground text-xs ml-1">
+                                  {group.goalCount} goals
+                                </Text>
+                              </Badge>
+                            </View>
+                          </View>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="py-8">
+                        <View className="items-center gap-2">
+                          <Globe size={40} color="#d1d5db" />
+                          <Text className="text-base font-semibold text-foreground">
+                            No groups found
+                          </Text>
+                        </View>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Groups Summary Table */}
+                  {filteredGroups.length > 0 && (
+                    <Card className="mt-4">
+                      <CardHeader>
+                        <CardTitle>Groups Overview</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead flex={2}>Name</TableHead>
+                              <TableHead>Members</TableHead>
+                              <TableHead>Goals</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredGroups.map((group, index) => (
+                              <TableRow key={group.id} isLast={index === filteredGroups.length - 1}>
+                                <TableCell flex={2}>
+                                  <Text className="text-sm text-foreground font-medium" numberOfLines={1}>
+                                    {group.name}
+                                  </Text>
+                                </TableCell>
+                                <TableCell>
+                                  <Text className="text-sm text-foreground">{group.memberCount}</Text>
+                                </TableCell>
+                                <TableCell>
+                                  <Text className="text-sm text-foreground">{group.goalCount}</Text>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </View>
+              </TabsContent>
+
+              {/* People Tab */}
+              <TabsContent value="people">
+                <View className="gap-3 mt-4">
+                  {filteredPeople.length > 0 ? (
+                    filteredPeople.map((person) => (
+                      <Card key={person.id}>
+                        <CardContent className="py-4">
+                          <View className="gap-3">
+                            <View className="flex-row items-start justify-between gap-2">
+                              <View className="flex-1">
+                                <Text className="text-base font-semibold text-foreground">
+                                  {person.name}
+                                </Text>
+                                <Text className="text-xs text-muted mt-0.5">
+                                  {person.bio}
+                                </Text>
+                              </View>
+                              <Button className={`px-4 py-2 rounded-lg ${person.isFollowing ? "bg-muted" : ""}`}>
+                                <Text className={`font-semibold text-sm ${person.isFollowing ? "text-foreground" : "text-white"}`}>
+                                  {person.isFollowing ? "Following" : "Follow"}
+                                </Text>
+                              </Button>
+                            </View>
+
+                            <Badge className="bg-muted w-max">
+                              <Text className="text-foreground text-xs">
+                                {person.followerCount} followers
+                              </Text>
+                            </Badge>
+                          </View>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="py-8">
+                        <View className="items-center gap-2">
+                          <Users size={40} color="#d1d5db" />
+                          <Text className="text-base font-semibold text-foreground">
+                            No people found
+                          </Text>
+                        </View>
+                      </CardContent>
+                    </Card>
+                  )}
+                </View>
+              </TabsContent>
+            </Tabs>
           </View>
         </SlideIn>
-
-        {/* Groups Tab */}
-        {tabIndex === 0 && (
-          <SlideIn delay={150}>
-            <View className="px-6 mb-8 gap-3">
-              {filteredGroups.length > 0 ? (
-                filteredGroups.map((group) => (
-                  <Card key={group.id}>
-                    <CardContent className="py-4">
-                      <View className="gap-3">
-                        <View className="flex-row items-start justify-between gap-2">
-                          <View className="flex-1">
-                            <Text className="text-base font-semibold text-foreground">
-                              {group.name}
-                            </Text>
-                            <Text className="text-xs text-muted mt-0.5">
-                              {group.description}
-                            </Text>
-                          </View>
-                          <Button className="px-4 py-2 rounded-lg">
-                            <Text className="text-white font-semibold text-sm">Join</Text>
-                          </Button>
-                        </View>
-
-                        <View className="flex-row gap-3">
-                          <Badge className="bg-muted">
-                            <Users size={12} color="#666" />
-                            <Text className="text-foreground text-xs ml-1">
-                              {group.memberCount} members
-                            </Text>
-                          </Badge>
-                          <Badge className="bg-muted">
-                            <Target size={12} color="#666" />
-                            <Text className="text-foreground text-xs ml-1">
-                              {group.goalCount} goals
-                            </Text>
-                          </Badge>
-                        </View>
-                      </View>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <Card>
-                  <CardContent className="py-8">
-                    <View className="items-center gap-2">
-                      <Globe size={40} color="#d1d5db" />
-                      <Text className="text-base font-semibold text-foreground">
-                        No groups found
-                      </Text>
-                    </View>
-                  </CardContent>
-                </Card>
-              )}
-            </View>
-          </SlideIn>
-        )}
-
-        {/* People Tab */}
-        {tabIndex === 1 && (
-          <SlideIn delay={150}>
-            <View className="px-6 mb-8 gap-3">
-              {filteredPeople.length > 0 ? (
-                filteredPeople.map((person) => (
-                  <Card key={person.id}>
-                    <CardContent className="py-4">
-                      <View className="gap-3">
-                        <View className="flex-row items-start justify-between gap-2">
-                          <View className="flex-1">
-                            <Text className="text-base font-semibold text-foreground">
-                              {person.name}
-                            </Text>
-                            <Text className="text-xs text-muted mt-0.5">
-                              {person.bio}
-                            </Text>
-                          </View>
-                          <Button className={`px-4 py-2 rounded-lg ${person.isFollowing ? "bg-muted" : ""}`}>
-                            <Text className={`font-semibold text-sm ${person.isFollowing ? "text-foreground" : "text-white"}`}>
-                              {person.isFollowing ? "Following" : "Follow"}
-                            </Text>
-                          </Button>
-                        </View>
-
-                        <Badge className="bg-muted w-max">
-                          <Text className="text-foreground text-xs">
-                            {person.followerCount} followers
-                          </Text>
-                        </Badge>
-                      </View>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <Card>
-                  <CardContent className="py-8">
-                    <View className="items-center gap-2">
-                      <Users size={40} color="#d1d5db" />
-                      <Text className="text-base font-semibold text-foreground">
-                        No people found
-                      </Text>
-                    </View>
-                  </CardContent>
-                </Card>
-              )}
-            </View>
-          </SlideIn>
-        )}
       </ScrollView>
     </Container>
   );

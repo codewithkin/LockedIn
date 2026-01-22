@@ -8,48 +8,15 @@ import {
   UserPlus,
   Award,
   Trash2,
+  CheckCheck,
 } from "lucide-react-native";
 
 import { Container } from "@/components/container";
 import { FadeIn, SlideIn } from "@/components/animations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-// Mock data for notifications
-const MOCK_NOTIFICATIONS = [
-  {
-    id: "n1",
-    type: "goal_completed",
-    title: "Goal Completed!",
-    message: "You completed 'Run 50 miles this month'",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 5),
-  },
-  {
-    id: "n2",
-    type: "gang_request",
-    title: "New Gang Request",
-    message: "Sarah Chen wants to join your gang",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 30),
-  },
-  {
-    id: "n3",
-    type: "group_invite",
-    title: "Group Invitation",
-    message: "You've been invited to 'Fitness Warriors'",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
-  },
-  {
-    id: "n4",
-    type: "goal_surpassed",
-    title: "Goal Surpassed!",
-    message: "You surpassed your target for 'Save $500'",
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5),
-  },
-];
+import { Button } from "@/components/ui/button";
+import { useNotifications } from "@/hooks/use-data";
 
 const NOTIFICATION_ICONS = {
   goal_completed: Award,
@@ -80,26 +47,21 @@ function getTimeAgo(date: Date) {
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification, 
+    refreshNotifications 
+  } = useNotifications();
   const [refreshing, setRefreshing] = useState(false);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 500);
-  }, []);
-
-  const handleDelete = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
-
-  const handleMarkRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
-  };
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
+    await refreshNotifications();
+    setRefreshing(false);
+  }, [refreshNotifications]);
   return (
     <Container className="flex-1 bg-background">
       <ScrollView
@@ -120,6 +82,17 @@ export default function NotificationsPage() {
               )}
             </View>
             <Text className="text-muted text-base">Stay updated with your progress</Text>
+            
+            {/* Mark All as Read */}
+            {unreadCount > 0 && (
+              <Pressable
+                onPress={markAllAsRead}
+                className="mt-3 flex-row items-center gap-2"
+              >
+                <CheckCheck size={16} color="#ff6b35" />
+                <Text className="text-accent text-sm font-medium">Mark all as read</Text>
+              </Pressable>
+            )}
           </View>
         </FadeIn>
 
@@ -155,11 +128,11 @@ export default function NotificationsPage() {
                                 {notification.title}
                               </Text>
                               <Text className="text-sm text-muted mt-0.5">
-                                {notification.message}
+                                {notification.body}
                               </Text>
                             </View>
                           </View>
-                          <Pressable onPress={() => handleDelete(notification.id)}>
+                          <Pressable onPress={() => deleteNotification(notification.id)}>
                             <Trash2 size={18} color="#999" />
                           </Pressable>
                         </View>
@@ -170,7 +143,7 @@ export default function NotificationsPage() {
                             {getTimeAgo(notification.createdAt)}
                           </Text>
                           {!notification.isRead && (
-                            <Pressable onPress={() => handleMarkRead(notification.id)}>
+                            <Pressable onPress={() => markAsRead(notification.id)}>
                               <View className="px-3 py-1 rounded-full bg-accent/20">
                                 <Text className="text-xs font-semibold text-accent">
                                   Mark Read
