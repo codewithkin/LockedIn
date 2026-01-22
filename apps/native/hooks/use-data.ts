@@ -886,3 +886,41 @@ export function useUser() {
     updateUser,
   };
 }
+
+// ============== Leaderboard Hook ==============
+
+export function useLeaderboard() {
+  const [leaderboard, setLeaderboard] = useState<Array<{
+    rank: number;
+    id: string;
+    name: string;
+    avatarUrl?: string;
+    completedGoals: number;
+  }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await discoverApi.getLeaderboard();
+      if (response.success && response.leaderboard) {
+        setLeaderboard(response.leaderboard);
+      }
+    } catch (err) {
+      console.error("Failed to fetch leaderboard:", err);
+      setLeaderboard([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
+
+  return {
+    leaderboard,
+    isLoading,
+    refresh: fetchLeaderboard,
+  };
+}

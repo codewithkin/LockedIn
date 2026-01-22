@@ -216,6 +216,11 @@ export const discoverApi = {
     request<{ success: boolean; platform: PlatformStats; user: UserStats | null }>(
       "/api/discover/stats"
     ),
+
+  getLeaderboard: () =>
+    request<{ success: boolean; leaderboard: LeaderboardUser[] }>(
+      "/api/discover/leaderboard"
+    ),
 };
 
 // Types
@@ -374,6 +379,18 @@ export interface UserStats {
   surpassedGoals: number;
   activeGoals: number;
   groupCount: number;
+  gangCount: number;
+  avgProgress: number;
+  categoryBreakdown: Array<{ category: string; count: number }>;
+}
+
+export interface LeaderboardUser {
+  rank: number;
+  id: string;
+  name: string;
+  avatarUrl?: string;
+  completedGoals: number;
+}
   gangCount: number;
   avgProgress: number;
   categoryBreakdown: { category: string; count: number }[];

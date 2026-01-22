@@ -90,7 +90,7 @@ function DropdownMenuContent({
             entering={FadeIn.duration(150)}
             exiting={FadeOut.duration(100)}
             className={cn(
-              'min-w-[180px] bg-popover rounded-lg border border-border shadow-lg overflow-hidden',
+              'min-w-[180px] light:bg-white dark:bg-slate-800 rounded-lg light:border-blue-700 dark:border-slate-700 light:border dark:border shadow-lg overflow-hidden',
               className
             )}
           >
@@ -131,7 +131,7 @@ function DropdownMenuItem({
       onPress={handlePress}
       disabled={disabled}
       className={cn(
-        'flex-row items-center gap-3 px-4 py-3 active:bg-accent',
+        'flex-row items-center gap-3 px-4 py-3 light:active:bg-gray-100 dark:active:bg-gray-700',
         disabled && 'opacity-50',
         className
       )}
@@ -140,7 +140,7 @@ function DropdownMenuItem({
         <Text
           className={cn(
             'text-sm text-foreground',
-            destructive && 'text-destructive'
+            destructive && 'light:text-red-500 dark:text-red-400'
           )}
         >
           {children}
@@ -170,7 +170,7 @@ function DropdownMenuLabel({ children, className }: DropdownMenuLabelProps) {
 }
 
 function DropdownMenuSeparator({ className }: { className?: string }) {
-  return <View className={cn('h-px bg-border my-1', className)} />;
+  return <View className={cn('h-px light:bg-gray-200 dark:bg-gray-700 my-1', className)} />;
 }
 
 interface DropdownMenuGroupProps {

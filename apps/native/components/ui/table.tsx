@@ -9,7 +9,7 @@ interface TableProps {
 
 function Table({ children, className }: TableProps) {
   return (
-    <View className={cn('w-full rounded-md border border-border', className)}>
+    <View className={cn('w-full rounded-md light:border-blue-700 dark:border-slate-700 light:border', className)}>
       {children}
     </View>
   );
@@ -22,7 +22,7 @@ interface TableHeaderProps {
 
 function TableHeader({ children, className }: TableHeaderProps) {
   return (
-    <View className={cn('bg-muted/50 rounded-t-md', className)}>
+    <View className={cn('light:bg-gray-100 dark:bg-gray-800 rounded-t-md', className)}>
       {children}
     </View>
   );
@@ -48,7 +48,7 @@ function TableRow({ children, className, isLast }: TableRowProps) {
     <View
       className={cn(
         'flex-row items-center px-4 py-3',
-        !isLast && 'border-b border-border',
+        !isLast && 'light:border-b-gray-200 dark:border-b-gray-700 light:border-b dark:border-b',
         className
       )}
     >
@@ -66,7 +66,7 @@ interface TableHeadProps {
 function TableHead({ children, className, flex = 1 }: TableHeadProps) {
   return (
     <View className={cn('', className)} style={{ flex }}>
-      <Text className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+      <Text className="text-xs font-semibold light:text-gray-600 dark:text-gray-400 uppercase tracking-wide">
         {children}
       </Text>
     </View>
@@ -99,7 +99,7 @@ interface TableCaptionProps {
 function TableCaption({ children, className }: TableCaptionProps) {
   return (
     <View className={cn('py-2 px-4', className)}>
-      <Text className="text-xs text-muted-foreground text-center">{children}</Text>
+      <Text className="text-xs light:text-gray-600 dark:text-gray-400 text-center">{children}</Text>
     </View>
   );
 }

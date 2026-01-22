@@ -16,28 +16,28 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: cn(
-          'bg-primary active:bg-primary/90 shadow-sm shadow-black/5',
-          Platform.select({ web: 'hover:bg-primary/90' })
+          'light:bg-blue-600 dark:bg-blue-700 light:active:bg-blue-500 dark:active:bg-blue-600 shadow-sm shadow-black/5',
+          Platform.select({ web: 'light:hover:bg-blue-500 dark:hover:bg-blue-600' })
         ),
         destructive: cn(
-          'bg-destructive active:bg-destructive/90 dark:bg-destructive/60 shadow-sm shadow-black/5',
+          'light:bg-red-500 dark:bg-red-600 light:active:bg-red-400 dark:active:bg-red-500 shadow-sm shadow-black/5',
           Platform.select({
-            web: 'hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40',
+            web: 'light:hover:bg-red-400 dark:hover:bg-red-500 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40',
           })
         ),
         outline: cn(
-          'border-border bg-background active:bg-accent dark:bg-input/30 dark:border-input dark:active:bg-input/50 border shadow-sm shadow-black/5',
+          'light:border-gray-300 dark:border-gray-600 light:bg-white dark:bg-slate-900 light:active:bg-gray-50 dark:active:bg-slate-800 shadow-sm shadow-black/5',
           Platform.select({
-            web: 'hover:bg-accent dark:hover:bg-input/50',
+            web: 'light:hover:bg-gray-50 dark:hover:bg-slate-800',
           })
         ),
         secondary: cn(
-          'bg-secondary active:bg-secondary/80 shadow-sm shadow-black/5',
-          Platform.select({ web: 'hover:bg-secondary/80' })
+          'light:bg-gray-200 dark:bg-gray-700 light:active:bg-gray-100 dark:active:bg-gray-600 shadow-sm shadow-black/5',
+          Platform.select({ web: 'light:hover:bg-gray-100 dark:hover:bg-gray-600' })
         ),
         ghost: cn(
-          'active:bg-accent dark:active:bg-accent/50',
-          Platform.select({ web: 'hover:bg-accent dark:hover:bg-accent/50' })
+          'light:active:bg-gray-100 dark:active:bg-accent/50',
+          Platform.select({ web: 'light:hover:bg-gray-100 dark:hover:bg-accent/50' })
         ),
         link: '',
       },

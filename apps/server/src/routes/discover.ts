@@ -217,4 +217,44 @@ discover.get("/stats", optionalAuthMiddleware, async (c) => {
   });
 });
 
+// Get top 3 users by completed goals (leaderboard)
+discover.get("/leaderboard", optionalAuthMiddleware, async (c) => {
+  const topUsers = await prisma.user.findMany({
+    where: {
+      isPublic: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      avatarUrl: true,
+      _count: {
+        select: {
+          goals: {
+            where: {
+              isCompleted: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      goals: {
+        _count: "desc",
+      },
+    },
+    take: 3,
+  });
+
+  const leaderboard = topUsers.map((user, index) => ({
+    rank: index + 1,
+    id: user.id,
+    name: user.name || user.email,
+    avatarUrl: user.avatarUrl,
+    completedGoals: user._count.goals,
+  }));
+
+  return c.json({ success: true, leaderboard });
+});
+
 export default discover;

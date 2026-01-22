@@ -79,7 +79,7 @@ function TabsTrigger({ value, children, className, disabled }: TabsTriggerProps)
         // inactive tabs use foreground in light mode and white in dark mode
         isSelected
           ? 'light:text-white dark:text-black'
-          : 'light:text-foreground dark:text-white'
+          : 'light:text-muted-foreground dark:text-white'
       )}
     >
       <Pressable
