@@ -1,4 +1,4 @@
-import { Home, Target, Users, Zap, User } from "lucide-react-native";
+import { BarChart3, Target, Users, Zap, User } from "lucide-react-native";
 import { Tabs } from "expo-router";
 import { useThemeColor } from "heroui-native";
 
@@ -10,15 +10,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: themeColorBackground,
-        },
-        headerTintColor: themeColorForeground,
-        headerTitleStyle: {
-          color: themeColorForeground,
-          fontWeight: "600",
-        },
+        headerShown: false,
         tabBarStyle: {
           backgroundColor: themeColorBackground,
           borderTopColor: themeColorForeground + "15",
@@ -34,7 +26,7 @@ export default function TabLayout() {
         options={{
           title: "Cockpit",
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-            <Home size={size} color={color} />
+            <BarChart3 size={size} color={color} />
           ),
         }}
       />

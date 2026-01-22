@@ -48,7 +48,7 @@ function TabsList({ children, className }: TabsListProps) {
   return (
     <View
       className={cn(
-        'h-10 flex-row items-center justify-center rounded-md bg-muted p-1',
+        'flex-row items-center justify-center rounded-md p-1 gap-2',
         className
       )}
     >
@@ -68,19 +68,27 @@ function TabsTrigger({ value, children, className, disabled }: TabsTriggerProps)
   const { value: selectedValue, onValueChange } = useTabsContext();
   const isSelected = selectedValue === value;
 
+  // Reduce horizontal padding for inactive tabs and increase vertical padding for all
+  const horizontalPadding = isSelected ? 'px-3' : 'px-1.5';
+
   return (
     <TextClassContext.Provider
       value={cn(
         'text-sm font-medium native:text-base',
-        isSelected ? 'text-foreground' : 'text-muted-foreground'
+        // Active tab text opposes background for contrast;
+        // inactive tabs use foreground in light mode and white in dark mode
+        isSelected
+          ? 'light:text-white dark:text-black'
+          : 'light:text-foreground dark:text-white'
       )}
     >
       <Pressable
         disabled={disabled}
         onPress={() => onValueChange(value)}
         className={cn(
-          'flex-1 flex-row items-center justify-center gap-1.5 rounded-sm px-3 py-1.5',
-          isSelected && 'bg-background shadow-sm',
+          'flex-1 flex-row items-center justify-center gap-1.5 rounded-full py-4 border border-gray-400 shadow-sm shadow-black/5',
+          horizontalPadding,
+          isSelected && 'light:bg-black dark:bg-white',
           disabled && 'opacity-50',
           className
         )}

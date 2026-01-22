@@ -63,10 +63,9 @@ export default function CockpitScreen() {
         <FadeIn>
           <View className="p-6 flex-row items-start justify-between">
             <View className="flex-1">
-              <Text className="text-3xl font-bold text-foreground mb-2">Welcome Back</Text>
+              <Text className="text-3xl font-bold text-foreground mb-1">Welcome Back</Text>
               <Text className="text-muted text-base">Your progress dashboard</Text>
             </View>
-            <UserMenu />
           </View>
         </FadeIn>
 
