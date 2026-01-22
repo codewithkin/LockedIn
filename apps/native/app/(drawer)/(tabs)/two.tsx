@@ -12,12 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useGroups } from "@/hooks/use-data";
-
-const CURRENT_USER_ID = "user_1";
+import { useGroups, useUser } from "@/hooks/use-data";
 
 export default function GroupsScreen() {
   const { groups, refreshGroups } = useGroups();
+  const { user } = useUser();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState("overview");
   
@@ -26,20 +25,20 @@ export default function GroupsScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await new Promise((r) => setTimeout(r, 500));
-    refreshGroups();
+    await refreshGroups();
     setRefreshing(false);
   }, [refreshGroups]);
 
-  const myGroups = groups.filter((g) => g.ownerId === CURRENT_USER_ID);
-  const joinedGroups = groups.filter((g) => g.ownerId !== CURRENT_USER_ID);
+  const currentUserId = user?.id;
+  const myGroups = groups.filter((g) => g.ownerId === currentUserId);
+  const joinedGroups = groups.filter((g) => g.ownerId !== currentUserId);
   const totalMembers = groups.reduce((acc, g) => acc + g.members.length, 0);
 
   // Chart data for member distribution
   const memberChartData = groups.slice(0, 5).map((group) => ({
     value: group.members.length,
     label: group.name.slice(0, 8),
-    frontColor: group.ownerId === CURRENT_USER_ID ? "#f59e0b" : "#3b82f6",
+    frontColor: group.ownerId === currentUserId ? "#f59e0b" : "#3b82f6",
   }));
 
   return (

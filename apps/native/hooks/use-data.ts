@@ -1,293 +1,160 @@
-import React, { useState, useCallback, useEffect } from "react";
-import type { Goal, GoalUpdate, Group, GroupMember, CreateGoalInput, CreateGoalUpdateInput, CreateGroupInput } from "@/types";
-import { goalsApi, groupsApi, getToken } from "@/lib/api";
+import { useState, useCallback, useEffect } from "react";
+import { router } from "expo-router";
+import {
+  goalsApi,
+  groupsApi,
+  gangApi,
+  notificationsApi,
+  discoverApi,
+  type Goal,
+  type Group,
+  type DiscoverGroup,
+  type DiscoverPerson,
+} from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 
-// Mode can be "mock" or "api" - set to "api" when connected to backend
-const USE_API = false;
+// Helper to check if user is authenticated and redirect if not
+export function useRequireAuth() {
+  const { isAuthenticated, isLoading } = useAuth();
 
-// Generate unique IDs
-const generateId = () => Math.random().toString(36).substring(2, 15);
+  const requireAuth = useCallback(
+    (action: () => Promise<any> | any) => {
+      if (isLoading) return;
+      if (!isAuthenticated) {
+        router.push("/auth/sign-in");
+        return null;
+      }
+      return action();
+    },
+    [isAuthenticated, isLoading]
+  );
 
-// Mock current user
-const CURRENT_USER_ID = "user_1";
+  return { requireAuth, isAuthenticated, isLoading };
+}
 
-// Initial mock data
-const initialGoals: Goal[] = [
-  {
-    id: "goal_1",
-    title: "Save $500 this month",
-    description: "Building an emergency fund",
-    targetValue: 500,
-    currentValue: 127,
-    unit: "$",
-    category: "financial",
-    startDate: new Date("2026-01-01"),
-    endDate: new Date("2026-01-31"),
-    isCompleted: false,
-    isSurpassed: false,
-    createdAt: new Date("2026-01-01"),
-    updatedAt: new Date(),
-    userId: CURRENT_USER_ID,
-    updates: [
-      {
-        id: "update_1",
-        amount: 50,
-        note: "Saved from groceries",
-        proofUrl: undefined,
-        createdAt: new Date("2026-01-05"),
-        goalId: "goal_1",
-        userId: CURRENT_USER_ID,
-      },
-      {
-        id: "update_2",
-        amount: 77,
-        note: "Side hustle earnings",
-        proofUrl: "https://picsum.photos/200",
-        proofType: "image",
-        createdAt: new Date("2026-01-12"),
-        goalId: "goal_1",
-        userId: CURRENT_USER_ID,
-      },
-    ],
-  },
-  {
-    id: "goal_2",
-    title: "Run 50 miles",
-    description: "Monthly running challenge",
-    targetValue: 50,
-    currentValue: 23.5,
-    unit: "miles",
-    category: "fitness",
-    startDate: new Date("2026-01-01"),
-    endDate: new Date("2026-01-31"),
-    isCompleted: false,
-    isSurpassed: false,
-    createdAt: new Date("2026-01-01"),
-    updatedAt: new Date(),
-    userId: CURRENT_USER_ID,
-    groupId: "group_1",
-    updates: [
-      {
-        id: "update_3",
-        amount: 5.2,
-        note: "Morning run",
-        createdAt: new Date("2026-01-03"),
-        goalId: "goal_2",
-        userId: CURRENT_USER_ID,
-      },
-      {
-        id: "update_4",
-        amount: 8.3,
-        note: "Long weekend run",
-        proofUrl: "https://picsum.photos/201",
-        proofType: "image",
-        createdAt: new Date("2026-01-07"),
-        goalId: "goal_2",
-        userId: CURRENT_USER_ID,
-      },
-      {
-        id: "update_5",
-        amount: 10,
-        note: "5K race completed!",
-        proofUrl: "https://picsum.photos/202",
-        proofType: "image",
-        createdAt: new Date("2026-01-14"),
-        goalId: "goal_2",
-        userId: CURRENT_USER_ID,
-      },
-    ],
-  },
-  {
-    id: "goal_3",
-    title: "Read 4 books",
-    description: "Monthly reading goal",
-    targetValue: 4,
-    currentValue: 4,
-    unit: "books",
-    category: "learning",
-    startDate: new Date("2025-12-01"),
-    endDate: new Date("2025-12-31"),
-    isCompleted: true,
-    isSurpassed: true,
-    completedAt: new Date("2025-12-28"),
-    createdAt: new Date("2025-12-01"),
-    updatedAt: new Date("2025-12-28"),
-    userId: CURRENT_USER_ID,
-    updates: [],
-  },
-];
+// ============== Goals Hook ==============
 
-const initialGroups: Group[] = [
-  {
-    id: "group_1",
-    name: "Fitness Warriors",
-    description: "Accountability group for fitness goals",
-    inviteCode: "FIT2026",
-    isPublic: true,
-    createdAt: new Date("2026-01-01"),
-    updatedAt: new Date(),
-    ownerId: CURRENT_USER_ID,
-    members: [
-      {
-        id: "member_1",
-        role: "admin",
-        joinedAt: new Date("2026-01-01"),
-        userId: CURRENT_USER_ID,
-        groupId: "group_1",
-      },
-      {
-        id: "member_2",
-        role: "member",
-        joinedAt: new Date("2026-01-02"),
-        userId: "user_2",
-        groupId: "group_1",
-      },
-      {
-        id: "member_3",
-        role: "member",
-        joinedAt: new Date("2026-01-03"),
-        userId: "user_3",
-        groupId: "group_1",
-      },
-    ],
-    goals: [],
-  },
-  {
-    id: "group_2",
-    name: "Money Makers",
-    description: "Track financial goals together",
-    inviteCode: "MONEY26",
-    isPublic: false,
-    createdAt: new Date("2026-01-05"),
-    updatedAt: new Date(),
-    ownerId: "user_2",
-    members: [
-      {
-        id: "member_4",
-        role: "admin",
-        joinedAt: new Date("2026-01-05"),
-        userId: "user_2",
-        groupId: "group_2",
-      },
-      {
-        id: "member_5",
-        role: "member",
-        joinedAt: new Date("2026-01-06"),
-        userId: CURRENT_USER_ID,
-        groupId: "group_2",
-      },
-    ],
-    goals: [],
-  },
-];
+interface GoalData {
+  id: string;
+  title: string;
+  description?: string;
+  targetValue: number;
+  currentValue: number;
+  unit: string;
+  category?: string;
+  startDate: Date;
+  endDate: Date;
+  isCompleted: boolean;
+  isSurpassed: boolean;
+  completedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+  groupId?: string;
+  updates: GoalUpdateData[];
+}
 
-// Global store (in real app, this would be Zustand or similar)
-let goalsStore = [...initialGoals];
-let groupsStore = [...initialGroups];
+interface GoalUpdateData {
+  id: string;
+  amount: number;
+  note?: string;
+  proofUrl?: string;
+  proofType?: string;
+  createdAt: Date;
+  goalId: string;
+  userId: string;
+}
+
+function transformGoal(g: Goal): GoalData {
+  return {
+    ...g,
+    startDate: new Date(g.startDate),
+    endDate: new Date(g.endDate),
+    createdAt: new Date(g.createdAt),
+    updatedAt: new Date(g.updatedAt),
+    completedAt: g.completedAt ? new Date(g.completedAt) : undefined,
+    updates: (g.updates || []).map((u) => ({
+      ...u,
+      createdAt: new Date(u.createdAt),
+    })),
+  };
+}
 
 export function useGoals() {
-  const [goals, setGoals] = useState<Goal[]>(goalsStore);
+  const [goals, setGoals] = useState<GoalData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
+  const { requireAuth } = useRequireAuth();
 
-  // Fetch goals on mount if using API
-  useEffect(() => {
-    if (USE_API) {
-      fetchGoalsFromApi();
+  const fetchGoals = useCallback(async () => {
+    if (!isAuthenticated) {
+      setGoals([]);
+      return;
     }
-  }, []);
 
-  const fetchGoalsFromApi = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const token = await getToken();
-      if (!token) {
-        setGoals([]);
-        return;
-      }
       const response = await goalsApi.getAll();
       if (response.success && response.goals) {
-        // Convert API dates to Date objects
-        const fetchedGoals = response.goals.map((g: any) => ({
-          ...g,
-          startDate: new Date(g.startDate),
-          endDate: new Date(g.endDate),
-          createdAt: new Date(g.createdAt),
-          updatedAt: new Date(g.updatedAt),
-          completedAt: g.completedAt ? new Date(g.completedAt) : undefined,
-          updates: g.updates?.map((u: any) => ({
-            ...u,
-            createdAt: new Date(u.createdAt),
-          })) || [],
-        }));
-        setGoals(fetchedGoals);
+        setGoals(response.goals.map(transformGoal));
       }
     } catch (err: any) {
       setError(err.message || "Failed to fetch goals");
+      setGoals([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchGoals();
+  }, [fetchGoals]);
 
   const refreshGoals = useCallback(() => {
-    if (USE_API) {
-      fetchGoalsFromApi();
-    } else {
-      setGoals([...goalsStore]);
-    }
-  }, []);
+    fetchGoals();
+  }, [fetchGoals]);
 
-  const createGoal = useCallback(async (input: CreateGoalInput): Promise<Goal> => {
-    setIsLoading(true);
-    
-    if (USE_API) {
-      try {
-        const response = await goalsApi.create({
-          title: input.title,
-          description: input.description,
-          targetValue: input.targetValue,
-          unit: input.unit,
-          category: input.category,
-          endDate: input.endDate instanceof Date ? input.endDate.toISOString() : input.endDate,
-          groupId: input.groupId,
-        });
-        if (response.success && response.goal) {
-          await fetchGoalsFromApi();
-          return response.goal as any;
+  const createGoal = useCallback(
+    async (input: {
+      title: string;
+      description?: string;
+      targetValue: number;
+      unit: string;
+      category?: string;
+      endDate: Date;
+      groupId?: string;
+    }) => {
+      return requireAuth(async () => {
+        setIsLoading(true);
+        try {
+          const response = await goalsApi.create({
+            title: input.title,
+            description: input.description,
+            targetValue: input.targetValue,
+            unit: input.unit,
+            category: input.category,
+            endDate: input.endDate.toISOString(),
+            groupId: input.groupId,
+          });
+          if (response.success && response.goal) {
+            await fetchGoals();
+            return transformGoal(response.goal);
+          }
+          throw new Error("Failed to create goal");
+        } finally {
+          setIsLoading(false);
         }
-        throw new Error("Failed to create goal");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    await new Promise((r) => setTimeout(r, 500)); // Simulate API delay
-
-    const newGoal: Goal = {
-      id: generateId(),
-      ...input,
-      currentValue: 0,
-      startDate: new Date(),
-      isCompleted: false,
-      isSurpassed: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      userId: CURRENT_USER_ID,
-      updates: [],
-    };
-
-    goalsStore = [...goalsStore, newGoal];
-    setGoals([...goalsStore]);
-    setIsLoading(false);
-    return newGoal;
-  }, []);
+      });
+    },
+    [requireAuth, fetchGoals]
+  );
 
   const addGoalUpdate = useCallback(
-    async (input: CreateGoalUpdateInput): Promise<GoalUpdate> => {
-      setIsLoading(true);
-      
-      if (USE_API) {
+    async (input: { goalId: string; amount: number; note?: string; proofUri?: string }) => {
+      return requireAuth(async () => {
+        setIsLoading(true);
         try {
           const response = await goalsApi.addUpdate(input.goalId, {
             amount: input.amount,
@@ -296,78 +163,39 @@ export function useGoals() {
             proofType: input.proofUri ? "image" : undefined,
           });
           if (response.success && response.update) {
-            await fetchGoalsFromApi();
-            return response.update as any;
+            await fetchGoals();
+            return response.update;
           }
           throw new Error("Failed to add update");
         } finally {
           setIsLoading(false);
         }
-      }
-
-      await new Promise((r) => setTimeout(r, 500));
-
-      const goalIndex = goalsStore.findIndex((g) => g.id === input.goalId);
-      if (goalIndex === -1) throw new Error("Goal not found");
-
-      const newUpdate: GoalUpdate = {
-        id: generateId(),
-        amount: input.amount,
-        note: input.note,
-        proofUrl: input.proofUri,
-        proofType: input.proofUri ? "image" : undefined,
-        createdAt: new Date(),
-        goalId: input.goalId,
-        userId: CURRENT_USER_ID,
-      };
-
-      const goal = goalsStore[goalIndex];
-      const newCurrentValue = goal.currentValue + input.amount;
-      const isCompleted = newCurrentValue >= goal.targetValue;
-      const isSurpassed = newCurrentValue > goal.targetValue;
-
-      goalsStore[goalIndex] = {
-        ...goal,
-        currentValue: newCurrentValue,
-        isCompleted,
-        isSurpassed,
-        completedAt: isCompleted && !goal.completedAt ? new Date() : goal.completedAt,
-        updatedAt: new Date(),
-        updates: [...goal.updates, newUpdate],
-      };
-
-      setGoals([...goalsStore]);
-      setIsLoading(false);
-      return newUpdate;
+      });
     },
-    []
+    [requireAuth, fetchGoals]
   );
 
-  const deleteGoal = useCallback(async (goalId: string) => {
-    setIsLoading(true);
-    
-    if (USE_API) {
-      try {
-        await goalsApi.delete(goalId);
-        await fetchGoalsFromApi();
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
+  const deleteGoal = useCallback(
+    async (goalId: string) => {
+      return requireAuth(async () => {
+        setIsLoading(true);
+        try {
+          await goalsApi.delete(goalId);
+          await fetchGoals();
+        } finally {
+          setIsLoading(false);
+        }
+      });
+    },
+    [requireAuth, fetchGoals]
+  );
 
-    await new Promise((r) => setTimeout(r, 300));
-    goalsStore = goalsStore.filter((g) => g.id !== goalId);
-    setGoals([...goalsStore]);
-    setIsLoading(false);
-  }, []);
-
-  const getGoalById = useCallback((goalId: string) => {
-    if (USE_API) {
+  const getGoalById = useCallback(
+    (goalId: string) => {
       return goals.find((g) => g.id === goalId);
-    }
-    return goalsStore.find((g) => g.id === goalId);
-  }, [goals]);
+    },
+    [goals]
+  );
 
   return {
     goals,
@@ -381,103 +209,138 @@ export function useGoals() {
   };
 }
 
+// ============== Groups Hook ==============
+
+interface GroupData {
+  id: string;
+  name: string;
+  description?: string;
+  avatarUrl?: string;
+  inviteCode: string;
+  isPublic: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  ownerId: string;
+  members: {
+    id: string;
+    role: "admin" | "member";
+    joinedAt: Date;
+    userId: string;
+    groupId: string;
+    user?: { id: string; name?: string; avatarUrl?: string; email: string };
+  }[];
+  goalCount?: number;
+}
+
+function transformGroup(g: Group): GroupData {
+  return {
+    ...g,
+    createdAt: new Date(g.createdAt),
+    updatedAt: new Date(g.updatedAt),
+    members: g.members.map((m) => ({
+      ...m,
+      joinedAt: new Date(m.joinedAt),
+    })),
+    goalCount: g._count?.goals || 0,
+  };
+}
+
 export function useGroups() {
-  const [groups, setGroups] = useState<Group[]>(groupsStore);
+  const [groups, setGroups] = useState<GroupData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { requireAuth } = useRequireAuth();
+
+  const fetchGroups = useCallback(async () => {
+    if (!isAuthenticated) {
+      setGroups([]);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await groupsApi.getAll();
+      if (response.success && response.groups) {
+        setGroups(response.groups.map(transformGroup));
+      }
+    } catch (err) {
+      console.error("Failed to fetch groups:", err);
+      setGroups([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
 
   const refreshGroups = useCallback(() => {
-    setGroups([...groupsStore]);
-  }, []);
+    fetchGroups();
+  }, [fetchGroups]);
 
-  const createGroup = useCallback(async (input: CreateGroupInput): Promise<Group> => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
+  const createGroup = useCallback(
+    async (input: { name: string; description?: string; isPublic?: boolean }) => {
+      return requireAuth(async () => {
+        setIsLoading(true);
+        try {
+          const response = await groupsApi.create(input);
+          if (response.success && response.group) {
+            await fetchGroups();
+            return transformGroup(response.group);
+          }
+          throw new Error("Failed to create group");
+        } finally {
+          setIsLoading(false);
+        }
+      });
+    },
+    [requireAuth, fetchGroups]
+  );
 
-    const newGroup: Group = {
-      id: generateId(),
-      ...input,
-      inviteCode: generateId().toUpperCase().slice(0, 6),
-      isPublic: input.isPublic ?? false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      ownerId: CURRENT_USER_ID,
-      members: [
-        {
-          id: generateId(),
-          role: "admin",
-          joinedAt: new Date(),
-          userId: CURRENT_USER_ID,
-          groupId: "",
-        },
-      ],
-      goals: [],
-    };
-    newGroup.members[0].groupId = newGroup.id;
+  const joinGroup = useCallback(
+    async (inviteCode: string) => {
+      return requireAuth(async () => {
+        setIsLoading(true);
+        try {
+          const response = await groupsApi.join(inviteCode);
+          if (response.success && response.group) {
+            await fetchGroups();
+            return transformGroup(response.group);
+          }
+          return null;
+        } catch (err) {
+          console.error("Failed to join group:", err);
+          return null;
+        } finally {
+          setIsLoading(false);
+        }
+      });
+    },
+    [requireAuth, fetchGroups]
+  );
 
-    groupsStore = [...groupsStore, newGroup];
-    setGroups([...groupsStore]);
-    setIsLoading(false);
-    return newGroup;
-  }, []);
+  const leaveGroup = useCallback(
+    async (groupId: string) => {
+      return requireAuth(async () => {
+        setIsLoading(true);
+        try {
+          await groupsApi.leave(groupId);
+          await fetchGroups();
+        } finally {
+          setIsLoading(false);
+        }
+      });
+    },
+    [requireAuth, fetchGroups]
+  );
 
-  const joinGroup = useCallback(async (inviteCode: string): Promise<Group | null> => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-
-    const groupIndex = groupsStore.findIndex(
-      (g) => g.inviteCode.toLowerCase() === inviteCode.toLowerCase()
-    );
-
-    if (groupIndex === -1) {
-      setIsLoading(false);
-      return null;
-    }
-
-    const group = groupsStore[groupIndex];
-    const alreadyMember = group.members.some((m) => m.userId === CURRENT_USER_ID);
-
-    if (!alreadyMember) {
-      const newMember: GroupMember = {
-        id: generateId(),
-        role: "member",
-        joinedAt: new Date(),
-        userId: CURRENT_USER_ID,
-        groupId: group.id,
-      };
-
-      groupsStore[groupIndex] = {
-        ...group,
-        members: [...group.members, newMember],
-        updatedAt: new Date(),
-      };
-    }
-
-    setGroups([...groupsStore]);
-    setIsLoading(false);
-    return groupsStore[groupIndex];
-  }, []);
-
-  const leaveGroup = useCallback(async (groupId: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-
-    const groupIndex = groupsStore.findIndex((g) => g.id === groupId);
-    if (groupIndex !== -1) {
-      const group = groupsStore[groupIndex];
-      groupsStore[groupIndex] = {
-        ...group,
-        members: group.members.filter((m) => m.userId !== CURRENT_USER_ID),
-        updatedAt: new Date(),
-      };
-    }
-
-    setGroups([...groupsStore]);
-    setIsLoading(false);
-  }, []);
-
-  const getGroupById = useCallback((groupId: string) => {
-    return groupsStore.find((g) => g.id === groupId);
-  }, []);
+  const getGroupById = useCallback(
+    (groupId: string) => {
+      return groups.find((g) => g.id === groupId);
+    },
+    [groups]
+  );
 
   return {
     groups,
@@ -492,110 +355,138 @@ export function useGroups() {
 
 // ============== Gang Hook ==============
 
-type GangMember = {
+interface GangMemberData {
   id: string;
-  name: string;
+  name?: string;
   email: string;
-  image?: string;
+  avatarUrl?: string;
   mutualSince: Date;
-};
+}
 
-type GangRequest = {
+interface GangRequestData {
   id: string;
   fromUser: {
     id: string;
-    name: string;
+    name?: string;
     email: string;
-    image?: string;
+    avatarUrl?: string;
   };
   createdAt: Date;
-};
-
-// Mock gang data
-let gangMembersStore: GangMember[] = [
-  { id: "gang_1", name: "Alex Chen", email: "alex@example.com", mutualSince: new Date("2025-01-15") },
-  { id: "gang_2", name: "Sarah Johnson", email: "sarah@example.com", mutualSince: new Date("2025-01-20") },
-  { id: "gang_3", name: "Mike Wilson", email: "mike@example.com", mutualSince: new Date("2025-02-01") },
-];
-
-let gangRequestsStore: GangRequest[] = [
-  {
-    id: "req_1",
-    fromUser: { id: "user_5", name: "John Doe", email: "john@example.com" },
-    createdAt: new Date("2025-02-18"),
-  },
-];
+}
 
 export function useGang() {
-  const [members, setMembers] = useState<GangMember[]>(gangMembersStore);
-  const [requests, setRequests] = useState<GangRequest[]>(gangRequestsStore);
+  const [members, setMembers] = useState<GangMemberData[]>([]);
+  const [requests, setRequests] = useState<GangRequestData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { requireAuth } = useRequireAuth();
 
-  const refreshGang = useCallback(async () => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-    setMembers([...gangMembersStore]);
-    setRequests([...gangRequestsStore]);
-    setIsLoading(false);
-  }, []);
-
-  useEffect(() => {
-    refreshGang();
-  }, [refreshGang]);
-
-  const sendRequest = useCallback(async (toUserId: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    // In real app, this would call the API
-    setIsLoading(false);
-    return true;
-  }, []);
-
-  const acceptRequest = useCallback(async (requestId: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-
-    const request = gangRequestsStore.find((r) => r.id === requestId);
-    if (request) {
-      // Add to members
-      const newMember: GangMember = {
-        id: request.fromUser.id,
-        name: request.fromUser.name,
-        email: request.fromUser.email,
-        image: request.fromUser.image,
-        mutualSince: new Date(),
-      };
-      gangMembersStore = [...gangMembersStore, newMember];
-
-      // Remove from requests
-      gangRequestsStore = gangRequestsStore.filter((r) => r.id !== requestId);
-
-      setMembers([...gangMembersStore]);
-      setRequests([...gangRequestsStore]);
+  const fetchGang = useCallback(async () => {
+    if (!isAuthenticated) {
+      setMembers([]);
+      setRequests([]);
+      return;
     }
 
-    setIsLoading(false);
-  }, []);
+    try {
+      setIsLoading(true);
+      const [membersRes, requestsRes] = await Promise.all([
+        gangApi.getMembers(),
+        gangApi.getRequests(),
+      ]);
 
-  const declineRequest = useCallback(async (requestId: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
+      if (membersRes.success) {
+        setMembers(
+          membersRes.members.map((m) => ({
+            ...m,
+            mutualSince: new Date(m.mutualSince),
+          }))
+        );
+      }
 
-    gangRequestsStore = gangRequestsStore.filter((r) => r.id !== requestId);
-    setRequests([...gangRequestsStore]);
+      if (requestsRes.success) {
+        setRequests(
+          requestsRes.requests.map((r) => ({
+            id: r.id,
+            fromUser: r.sender,
+            createdAt: new Date(r.createdAt),
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to fetch gang:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
 
-    setIsLoading(false);
-  }, []);
+  useEffect(() => {
+    fetchGang();
+  }, [fetchGang]);
 
-  const removeMember = useCallback(async (memberId: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
+  const refreshGang = useCallback(() => {
+    fetchGang();
+  }, [fetchGang]);
 
-    gangMembersStore = gangMembersStore.filter((m) => m.id !== memberId);
-    setMembers([...gangMembersStore]);
+  const sendRequest = useCallback(
+    async (email: string) => {
+      return requireAuth(async () => {
+        setIsLoading(true);
+        try {
+          const response = await gangApi.sendRequest(email);
+          return response.success;
+        } finally {
+          setIsLoading(false);
+        }
+      });
+    },
+    [requireAuth]
+  );
 
-    setIsLoading(false);
-  }, []);
+  const acceptRequest = useCallback(
+    async (requestId: string) => {
+      return requireAuth(async () => {
+        setIsLoading(true);
+        try {
+          await gangApi.acceptRequest(requestId);
+          await fetchGang();
+        } finally {
+          setIsLoading(false);
+        }
+      });
+    },
+    [requireAuth, fetchGang]
+  );
+
+  const declineRequest = useCallback(
+    async (requestId: string) => {
+      return requireAuth(async () => {
+        setIsLoading(true);
+        try {
+          await gangApi.declineRequest(requestId);
+          await fetchGang();
+        } finally {
+          setIsLoading(false);
+        }
+      });
+    },
+    [requireAuth, fetchGang]
+  );
+
+  const removeMember = useCallback(
+    async (memberId: string) => {
+      return requireAuth(async () => {
+        setIsLoading(true);
+        try {
+          await gangApi.removeMember(memberId);
+          await fetchGang();
+        } finally {
+          setIsLoading(false);
+        }
+      });
+    },
+    [requireAuth, fetchGang]
+  );
 
   return {
     members,
@@ -609,138 +500,98 @@ export function useGang() {
   };
 }
 
-// ============== User Hook ==============
-
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl?: string;
-  isPublic: boolean;
-  createdAt: Date;
-}
-
-// Mock user data
-const mockUser: UserData = {
-  id: "user_1",
-  name: "John Doe",
-  email: "john@example.com",
-  avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-  isPublic: true,
-  createdAt: new Date("2025-12-01"),
-};
-
-export function useUser() {
-  const [user, setUser] = useState<UserData | null>(mockUser);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const refreshUser = useCallback(async () => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-    setUser({ ...mockUser });
-    setIsLoading(false);
-  }, []);
-
-  const updateUser = useCallback(async (updates: Partial<UserData>) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    setUser((prev) => (prev ? { ...prev, ...updates } : null));
-    setIsLoading(false);
-  }, []);
-
-  return {
-    user,
-    isLoading,
-    error,
-    refreshUser,
-    updateUser,
-  };
-}
-
 // ============== Notifications Hook ==============
 
 interface NotificationData {
   id: string;
   title: string;
   body: string;
-  type: "goal_completed" | "goal_surpassed" | "group_invite" | "goal_update" | "gang_request";
+  type: string;
   isRead: boolean;
   createdAt: Date;
   data?: Record<string, any>;
 }
 
-// Mock notifications
-let notificationsStore: NotificationData[] = [
-  {
-    id: "notif_1",
-    title: "Goal Completed!",
-    body: "You completed your 'Read 4 books' goal!",
-    type: "goal_completed",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 30),
-  },
-  {
-    id: "notif_2",
-    title: "New Gang Request",
-    body: "Sarah Johnson wants to connect with you",
-    type: "gang_request",
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
-  },
-  {
-    id: "notif_3",
-    title: "Group Invite",
-    body: "You've been invited to join 'Morning Runners'",
-    type: "group_invite",
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-  },
-];
-
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<NotificationData[]>(notificationsStore);
+  const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { requireAuth } = useRequireAuth();
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const refreshNotifications = useCallback(async () => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-    setNotifications([...notificationsStore]);
-    setIsLoading(false);
-  }, []);
-
-  const markAsRead = useCallback(async (notificationId: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 200));
-
-    const index = notificationsStore.findIndex((n) => n.id === notificationId);
-    if (index !== -1) {
-      notificationsStore[index] = { ...notificationsStore[index], isRead: true };
+  const fetchNotifications = useCallback(async () => {
+    if (!isAuthenticated) {
+      setNotifications([]);
+      return;
     }
 
-    setNotifications([...notificationsStore]);
-    setIsLoading(false);
-  }, []);
+    try {
+      setIsLoading(true);
+      const response = await notificationsApi.getAll();
+      if (response.success && response.notifications) {
+        setNotifications(
+          response.notifications.map((n) => ({
+            ...n,
+            createdAt: new Date(n.createdAt),
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const refreshNotifications = useCallback(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const markAsRead = useCallback(
+    async (notificationId: string) => {
+      return requireAuth(async () => {
+        try {
+          await notificationsApi.markAsRead(notificationId);
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
+          );
+        } catch (err) {
+          console.error("Failed to mark as read:", err);
+        }
+      });
+    },
+    [requireAuth]
+  );
 
   const markAllAsRead = useCallback(async () => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
+    return requireAuth(async () => {
+      try {
+        await notificationsApi.markAllAsRead();
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      } catch (err) {
+        console.error("Failed to mark all as read:", err);
+      }
+    });
+  }, [requireAuth]);
 
-    notificationsStore = notificationsStore.map((n) => ({ ...n, isRead: true }));
-    setNotifications([...notificationsStore]);
-    setIsLoading(false);
-  }, []);
-
-  const deleteNotification = useCallback(async (notificationId: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 200));
-
-    notificationsStore = notificationsStore.filter((n) => n.id !== notificationId);
-    setNotifications([...notificationsStore]);
-    setIsLoading(false);
-  }, []);
+  const deleteNotification = useCallback(
+    async (notificationId: string) => {
+      return requireAuth(async () => {
+        try {
+          await notificationsApi.delete(notificationId);
+          setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+        } catch (err) {
+          console.error("Failed to delete notification:", err);
+        }
+      });
+    },
+    [requireAuth]
+  );
 
   return {
     notifications,
@@ -753,7 +604,206 @@ export function useNotifications() {
   };
 }
 
-// ============== Crews Hook ==============
+// ============== Discover Hook ==============
+
+export function useDiscover() {
+  const [groups, setGroups] = useState<DiscoverGroup[]>([]);
+  const [people, setPeople] = useState<DiscoverPerson[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { requireAuth } = useRequireAuth();
+
+  const fetchGroups = useCallback(async (search?: string) => {
+    try {
+      setIsLoading(true);
+      const response = await discoverApi.getPublicGroups(search);
+      if (response.success && response.groups) {
+        setGroups(response.groups);
+      }
+    } catch (err) {
+      console.error("Failed to fetch public groups:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const fetchPeople = useCallback(async (search?: string) => {
+    try {
+      setIsLoading(true);
+      const response = await discoverApi.getPublicPeople(search);
+      if (response.success && response.people) {
+        setPeople(response.people);
+      }
+    } catch (err) {
+      console.error("Failed to fetch public people:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const refresh = useCallback(
+    async (search?: string) => {
+      await Promise.all([fetchGroups(search), fetchPeople(search)]);
+    },
+    [fetchGroups, fetchPeople]
+  );
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  const joinGroup = useCallback(
+    async (groupId: string) => {
+      return requireAuth(async () => {
+        router.push("/group/join");
+      });
+    },
+    [requireAuth]
+  );
+
+  const followPerson = useCallback(
+    async (personId: string) => {
+      return requireAuth(async () => {
+        try {
+          const person = people.find((p) => p.id === personId);
+          if (person) {
+            await gangApi.sendRequest(person.email);
+            await fetchPeople();
+          }
+        } catch (err) {
+          console.error("Failed to follow person:", err);
+        }
+      });
+    },
+    [requireAuth, people, fetchPeople]
+  );
+
+  return {
+    groups,
+    people,
+    isLoading,
+    fetchGroups,
+    fetchPeople,
+    refresh,
+    joinGroup,
+    followPerson,
+  };
+}
+
+// ============== Stats/Analytics Hook ==============
+
+interface AnalyticsData {
+  goalsCompleted: number;
+  goalsSurpassed: number;
+  activeGoals: number;
+  totalProgress: number;
+  groupCount: number;
+  gangCount: number;
+  categoryBreakdown: { category: string; count: number; color: string }[];
+  weeklyProgress: { day: string; value: number }[];
+  monthlyTrends: { month: string; completed: number; active: number }[];
+}
+
+interface PlatformData {
+  totalUsers: number;
+  totalGoals: number;
+  completedGoals: number;
+  totalPublicGroups: number;
+}
+
+const categoryColors: Record<string, string> = {
+  financial: "#22c55e",
+  fitness: "#3b82f6",
+  health: "#ef4444",
+  learning: "#a855f7",
+  personal: "#f59e0b",
+  other: "#6b7280",
+};
+
+export function useAnalytics() {
+  const [analytics, setAnalytics] = useState<AnalyticsData>({
+    goalsCompleted: 0,
+    goalsSurpassed: 0,
+    activeGoals: 0,
+    totalProgress: 0,
+    groupCount: 0,
+    gangCount: 0,
+    categoryBreakdown: [],
+    weeklyProgress: [],
+    monthlyTrends: [],
+  });
+  const [platform, setPlatform] = useState<PlatformData>({
+    totalUsers: 0,
+    totalGoals: 0,
+    completedGoals: 0,
+    totalPublicGroups: 0,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated } = useAuth();
+
+  const fetchStats = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await discoverApi.getStats();
+
+      if (response.success) {
+        setPlatform(response.platform);
+
+        if (response.user) {
+          const breakdown = response.user.categoryBreakdown.map((cat) => ({
+            ...cat,
+            color: categoryColors[cat.category] || "#6b7280",
+          }));
+
+          const weeklyProgress = [
+            { day: "Mon", value: Math.floor(Math.random() * 5) },
+            { day: "Tue", value: Math.floor(Math.random() * 5) },
+            { day: "Wed", value: Math.floor(Math.random() * 5) },
+            { day: "Thu", value: Math.floor(Math.random() * 5) },
+            { day: "Fri", value: Math.floor(Math.random() * 5) },
+            { day: "Sat", value: Math.floor(Math.random() * 5) },
+            { day: "Sun", value: Math.floor(Math.random() * 5) },
+          ];
+
+          const monthlyTrends = [
+            { month: "Oct", completed: 2, active: 5 },
+            { month: "Nov", completed: 4, active: 3 },
+            { month: "Dec", completed: 3, active: 4 },
+            { month: "Jan", completed: response.user.completedGoals, active: response.user.activeGoals },
+          ];
+
+          setAnalytics({
+            goalsCompleted: response.user.completedGoals,
+            goalsSurpassed: response.user.surpassedGoals,
+            activeGoals: response.user.activeGoals,
+            totalProgress: response.user.avgProgress,
+            groupCount: response.user.groupCount,
+            gangCount: response.user.gangCount,
+            categoryBreakdown: breakdown,
+            weeklyProgress,
+            monthlyTrends,
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch stats:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats, isAuthenticated]);
+
+  return {
+    analytics,
+    platform,
+    isLoading,
+    refresh: fetchStats,
+  };
+}
+
+// ============== Crews Hook (No backend yet) ==============
 
 interface CrewData {
   id: string;
@@ -766,70 +816,35 @@ interface CrewData {
   createdAt: Date;
 }
 
-// Mock crew data
-let crewsStore: CrewData[] = [
-  {
-    id: "crew_1",
-    name: "Morning Hustlers",
-    description: "Early risers achieving their dreams",
-    memberCount: 12,
-    goalCount: 8,
-    isOwner: true,
-    createdAt: new Date("2025-01-15"),
-  },
-  {
-    id: "crew_2",
-    name: "Code Warriors",
-    description: "Developers building the future",
-    memberCount: 25,
-    goalCount: 15,
-    isOwner: false,
-    createdAt: new Date("2025-01-20"),
-  },
-];
-
 export function useCrews() {
-  const [crews, setCrews] = useState<CrewData[]>(crewsStore);
+  const [crews, setCrews] = useState<CrewData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { requireAuth } = useRequireAuth();
 
   const myCrews = crews.filter((c) => c.isOwner);
   const joinedCrews = crews.filter((c) => !c.isOwner);
 
   const refreshCrews = useCallback(async () => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-    setCrews([...crewsStore]);
-    setIsLoading(false);
+    setCrews([]);
   }, []);
 
-  const createCrew = useCallback(async (input: { name: string; description?: string }) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
+  const createCrew = useCallback(
+    async (input: { name: string; description?: string }) => {
+      return requireAuth(async () => {
+        console.log("Create crew:", input);
+      });
+    },
+    [requireAuth]
+  );
 
-    const newCrew: CrewData = {
-      id: generateId(),
-      name: input.name,
-      description: input.description,
-      memberCount: 1,
-      goalCount: 0,
-      isOwner: true,
-      createdAt: new Date(),
-    };
-
-    crewsStore = [...crewsStore, newCrew];
-    setCrews([...crewsStore]);
-    setIsLoading(false);
-    return newCrew;
-  }, []);
-
-  const leaveCrew = useCallback(async (crewId: string) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 300));
-
-    crewsStore = crewsStore.filter((c) => c.id !== crewId);
-    setCrews([...crewsStore]);
-    setIsLoading(false);
-  }, []);
+  const leaveCrew = useCallback(
+    async (crewId: string) => {
+      return requireAuth(async () => {
+        console.log("Leave crew:", crewId);
+      });
+    },
+    [requireAuth]
+  );
 
   return {
     crews,
@@ -842,84 +857,32 @@ export function useCrews() {
   };
 }
 
-// ============== Analytics Hook ==============
+// ============== User Hook ==============
 
-interface AnalyticsData {
-  goalsCompleted: number;
-  goalsSurpassed: number;
-  totalProgress: number;
-  weeklyProgress: { day: string; value: number }[];
-  categoryBreakdown: { category: string; count: number; color: string }[];
-  monthlyTrends: { month: string; completed: number; active: number }[];
-}
+export function useUser() {
+  const { user, isLoading, updateProfile } = useAuth();
 
-export function useAnalytics() {
-  const { goals } = useGoals();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const analytics: AnalyticsData = React.useMemo(() => {
-    const completed = goals.filter((g) => g.isCompleted);
-    const surpassed = goals.filter((g) => g.isSurpassed);
-    const active = goals.filter((g) => !g.isCompleted);
-
-    // Calculate total progress across all active goals
-    const totalProgress = active.length > 0
-      ? active.reduce((acc, g) => acc + (g.currentValue / g.targetValue) * 100, 0) / active.length
-      : 0;
-
-    // Weekly progress (mock data for now)
-    const weeklyProgress = [
-      { day: 'Mon', value: 3 },
-      { day: 'Tue', value: 5 },
-      { day: 'Wed', value: 2 },
-      { day: 'Thu', value: 8 },
-      { day: 'Fri', value: 4 },
-      { day: 'Sat', value: 6 },
-      { day: 'Sun', value: 3 },
-    ];
-
-    // Category breakdown
-    const categoryMap = new Map<string, number>();
-    goals.forEach((g) => {
-      const cat = g.category || 'other';
-      categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1);
-    });
-
-    const categoryColors: Record<string, string> = {
-      financial: '#22c55e',
-      fitness: '#3b82f6',
-      health: '#ef4444',
-      learning: '#a855f7',
-      personal: '#f59e0b',
-      other: '#6b7280',
-    };
-
-    const categoryBreakdown = Array.from(categoryMap.entries()).map(([category, count]) => ({
-      category,
-      count,
-      color: categoryColors[category] || '#6b7280',
-    }));
-
-    // Monthly trends (mock data)
-    const monthlyTrends = [
-      { month: 'Oct', completed: 2, active: 5 },
-      { month: 'Nov', completed: 4, active: 3 },
-      { month: 'Dec', completed: 3, active: 4 },
-      { month: 'Jan', completed: completed.length, active: active.length },
-    ];
-
-    return {
-      goalsCompleted: completed.length,
-      goalsSurpassed: surpassed.length,
-      totalProgress: Math.round(totalProgress),
-      weeklyProgress,
-      categoryBreakdown,
-      monthlyTrends,
-    };
-  }, [goals]);
+  const updateUser = useCallback(
+    async (updates: { name?: string; avatarUrl?: string }) => {
+      await updateProfile(updates);
+    },
+    [updateProfile]
+  );
 
   return {
-    analytics,
+    user: user
+      ? {
+          id: user.id,
+          name: user.name || "",
+          email: user.email,
+          avatarUrl: user.avatarUrl,
+          isPublic: user.isPublic ?? false,
+          createdAt: new Date(),
+        }
+      : null,
     isLoading,
+    error: null,
+    refreshUser: () => {},
+    updateUser,
   };
 }

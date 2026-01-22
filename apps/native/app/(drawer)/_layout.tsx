@@ -1,8 +1,9 @@
-import { Compass, Info, Twitter, Settings, Bell } from "lucide-react-native";
+import { Compass, Info, Twitter, Settings, Bell, Home } from "lucide-react-native";
 import { Drawer } from "expo-router/drawer";
 import { useThemeColor } from "heroui-native";
 import React, { useCallback } from "react";
-import { Text, View } from "react-native";
+import { Text, View, Pressable } from "react-native";
+import { DrawerActions, useNavigation } from "@react-navigation/native";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
@@ -51,7 +52,17 @@ function DrawerLayout() {
         name="(tabs)"
         options={{
           headerTitle: "LockedIn",
-          drawerItemStyle: { display: "none" },
+          drawerLabel: ({ focused }) => (
+            <Text style={{ color: focused ? themeColorAccent : themeColorMuted, fontWeight: "500" }}>
+              Home
+            </Text>
+          ),
+          drawerIcon: ({ size, focused }) => (
+            <Home
+              size={size}
+              color={focused ? themeColorAccent : themeColorMuted}
+            />
+          ),
         }}
       />
       

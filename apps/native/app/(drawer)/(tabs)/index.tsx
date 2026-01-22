@@ -16,7 +16,7 @@ import { useColorScheme } from "@/lib/use-color-scheme";
 
 export default function GoalsScreen() {
   const { goals, refreshGoals } = useGoals();
-  const analytics = useAnalytics();
+  const { analytics, refresh: refreshAnalytics } = useAnalytics();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState("overview");
   const { colorScheme } = useColorScheme();
@@ -27,10 +27,9 @@ export default function GoalsScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await new Promise((r) => setTimeout(r, 500));
-    refreshGoals();
+    await Promise.all([refreshGoals(), refreshAnalytics()]);
     setRefreshing(false);
-  }, [refreshGoals]);
+  }, [refreshGoals, refreshAnalytics]);
 
   const activeGoals = goals.filter((g) => !g.isCompleted);
   const completedGoals = goals.filter((g) => g.isCompleted);

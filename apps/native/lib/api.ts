@@ -146,6 +146,78 @@ export const groupsApi = {
     }),
 };
 
+// Gang API
+export const gangApi = {
+  getMembers: () =>
+    request<{ success: boolean; members: GangMember[] }>("/api/gang"),
+
+  getRequests: () =>
+    request<{ success: boolean; requests: GangRequest[] }>("/api/gang/requests"),
+
+  sendRequest: (email: string) =>
+    request<{ success: boolean; request: GangRequest }>("/api/gang/request", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
+  acceptRequest: (requestId: string) =>
+    request<{ success: boolean }>(`/api/gang/requests/${requestId}/accept`, {
+      method: "POST",
+    }),
+
+  declineRequest: (requestId: string) =>
+    request<{ success: boolean }>(`/api/gang/requests/${requestId}/decline`, {
+      method: "POST",
+    }),
+
+  removeMember: (memberId: string) =>
+    request<{ success: boolean }>(`/api/gang/${memberId}`, {
+      method: "DELETE",
+    }),
+};
+
+// Notifications API
+export const notificationsApi = {
+  getAll: () =>
+    request<{ success: boolean; notifications: Notification[] }>("/api/notifications"),
+
+  getUnreadCount: () =>
+    request<{ success: boolean; count: number }>("/api/notifications/unread-count"),
+
+  markAsRead: (id: string) =>
+    request<{ success: boolean }>(`/api/notifications/${id}/read`, {
+      method: "PATCH",
+    }),
+
+  markAllAsRead: () =>
+    request<{ success: boolean }>("/api/notifications/read-all", {
+      method: "PATCH",
+    }),
+
+  delete: (id: string) =>
+    request<{ success: boolean }>(`/api/notifications/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// Discover API (public endpoints)
+export const discoverApi = {
+  getPublicGroups: (search?: string) =>
+    request<{ success: boolean; groups: DiscoverGroup[] }>(
+      `/api/discover/groups${search ? `?search=${encodeURIComponent(search)}` : ""}`
+    ),
+
+  getPublicPeople: (search?: string) =>
+    request<{ success: boolean; people: DiscoverPerson[] }>(
+      `/api/discover/people${search ? `?search=${encodeURIComponent(search)}` : ""}`
+    ),
+
+  getStats: () =>
+    request<{ success: boolean; platform: PlatformStats; user: UserStats | null }>(
+      "/api/discover/stats"
+    ),
+};
+
 // Types
 export interface User {
   id: string;
@@ -233,4 +305,76 @@ export interface CreateGroupInput {
   name: string;
   description?: string;
   isPublic?: boolean;
+}
+
+// Gang types
+export interface GangMember {
+  id: string;
+  name?: string;
+  email: string;
+  avatarUrl?: string;
+  mutualSince: string;
+}
+
+export interface GangRequest {
+  id: string;
+  sender: {
+    id: string;
+    name?: string;
+    email: string;
+    avatarUrl?: string;
+  };
+  createdAt: string;
+  status: string;
+}
+
+// Notification types
+export interface Notification {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  isRead: boolean;
+  data?: Record<string, any>;
+  createdAt: string;
+}
+
+// Discover types
+export interface DiscoverGroup {
+  id: string;
+  name: string;
+  description?: string;
+  avatarUrl?: string;
+  memberCount: number;
+  goalCount: number;
+  isMember: boolean;
+  createdAt: string;
+}
+
+export interface DiscoverPerson {
+  id: string;
+  name?: string;
+  email: string;
+  avatarUrl?: string;
+  goalCount: number;
+  isFollowing: boolean;
+  createdAt: string;
+}
+
+export interface PlatformStats {
+  totalUsers: number;
+  totalGoals: number;
+  completedGoals: number;
+  totalPublicGroups: number;
+}
+
+export interface UserStats {
+  totalGoals: number;
+  completedGoals: number;
+  surpassedGoals: number;
+  activeGoals: number;
+  groupCount: number;
+  gangCount: number;
+  avgProgress: number;
+  categoryBreakdown: { category: string; count: number }[];
 }

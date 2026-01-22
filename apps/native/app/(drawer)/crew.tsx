@@ -9,8 +9,8 @@ import {
   MessageCircle,
   Sparkles,
 } from "lucide-react-native";
-import { Text, View, Pressable, ScrollView, TextInput, RefreshControl } from "react-native";
-import { useState, useCallback } from "react";
+import { Text, View, Pressable, ScrollView, TextInput, RefreshControl, ActivityIndicator } from "react-native";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 import { Container } from "@/components/container";
 import { FadeIn, SlideIn } from "@/components/animations";
@@ -20,62 +20,55 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useCrews } from "@/hooks/use-data";
-
-// Mock data for discoverable public crews
-const DISCOVER_CREWS = [
-  {
-    id: "d1",
-    name: "Global Runners",
-    description: "Runners from around the world tracking miles together",
-    memberCount: 1234,
-    goalCount: 45,
-  },
-  {
-    id: "d2",
-    name: "Money Makers",
-    description: "Financial goals and wealth building community",
-    memberCount: 892,
-    goalCount: 32,
-  },
-  {
-    id: "d3",
-    name: "Study Squad",
-    description: "Students helping students achieve academic goals",
-    memberCount: 2341,
-    goalCount: 78,
-  },
-];
+import { useCrews, useDiscover, useRequireAuth } from "@/hooks/use-data";
 
 export default function CrewPage() {
   const { crews, myCrews, joinedCrews, isLoading, createCrew, leaveCrew, refreshCrews } = useCrews();
+  const { groups: publicGroups, isLoading: isLoadingDiscover, fetchGroups } = useDiscover();
+  const { requireAuth, isAuthenticated } = useRequireAuth();
   const [selectedTab, setSelectedTab] = useState("my-crews");
   const [searchQuery, setSearchQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced search for public groups
+  useEffect(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    debounceTimer.current = setTimeout(() => {
+      if (selectedTab === "discover") {
+        fetchGroups(searchQuery);
+      }
+    }, 300);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [searchQuery, selectedTab, fetchGroups]);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await refreshCrews();
+    await Promise.all([refreshCrews(), fetchGroups(searchQuery)]);
     setIsRefreshing(false);
-  }, [refreshCrews]);
+  }, [refreshCrews, fetchGroups, searchQuery]);
 
   const handleCrewPress = (crewId: string) => {
     console.log("Navigate to crew:", crewId);
   };
 
   const handleJoinCrew = (crewId: string) => {
-    console.log("Join crew:", crewId);
+    requireAuth(() => {
+      console.log("Join crew:", crewId);
+    });
   };
 
   const handleCreateCrew = () => {
-    console.log("Create new crew");
+    requireAuth(() => {
+      console.log("Create new crew");
+    });
   };
 
   const filteredCrews = crews.filter((crew) =>
-    crew.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredDiscoverCrews = DISCOVER_CREWS.filter((crew) =>
     crew.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -300,43 +293,65 @@ export default function CrewPage() {
                     <Text className="text-base font-semibold text-foreground">Popular Crews</Text>
                   </View>
 
-                  <View className="gap-3">
-                    {filteredDiscoverCrews.map((crew) => (
-                      <Card key={crew.id}>
-                        <CardContent className="py-4">
-                          <View className="gap-3">
-                            <View className="flex-row items-start justify-between gap-2">
-                              <View className="flex-1 gap-1">
-                                <Text className="text-base font-semibold text-foreground">
-                                  {crew.name}
-                                </Text>
-                                <Text className="text-xs text-muted" numberOfLines={2}>
-                                  {crew.description}
-                                </Text>
+                  {isLoadingDiscover ? (
+                    <View className="py-8 items-center">
+                      <ActivityIndicator size="large" color="#ff6b35" />
+                    </View>
+                  ) : publicGroups.length > 0 ? (
+                    <View className="gap-3">
+                      {publicGroups.map((group) => (
+                        <Card key={group.id}>
+                          <CardContent className="py-4">
+                            <View className="gap-3">
+                              <View className="flex-row items-start justify-between gap-2">
+                                <View className="flex-1 gap-1">
+                                  <Text className="text-base font-semibold text-foreground">
+                                    {group.name}
+                                  </Text>
+                                  {group.description && (
+                                    <Text className="text-xs text-muted" numberOfLines={2}>
+                                      {group.description}
+                                    </Text>
+                                  )}
+                                </View>
+                                <Button
+                                  onPress={() => handleJoinCrew(group.id)}
+                                  disabled={group.isMember}
+                                  className={`px-4 py-2 rounded-lg ${group.isMember ? "opacity-50" : ""}`}
+                                >
+                                  <Text className="text-white font-semibold text-sm">
+                                    {group.isMember ? "Joined" : "Join"}
+                                  </Text>
+                                </Button>
                               </View>
-                              <Button
-                                onPress={() => handleJoinCrew(crew.id)}
-                                className="px-4 py-2 rounded-lg"
-                              >
-                                <Text className="text-white font-semibold text-sm">Join</Text>
-                              </Button>
-                            </View>
 
-                            <View className="flex-row gap-3">
-                              <Badge className="bg-muted">
-                                <Text className="text-foreground text-xs">
-                                  {crew.memberCount.toLocaleString()} members
-                                </Text>
-                              </Badge>
-                              <Badge className="bg-muted">
-                                <Text className="text-foreground text-xs">{crew.goalCount} goals</Text>
-                              </Badge>
+                              <View className="flex-row gap-3">
+                                <Badge className="bg-muted">
+                                  <Text className="text-foreground text-xs">
+                                    {group.memberCount.toLocaleString()} members
+                                  </Text>
+                                </Badge>
+                                <Badge className="bg-muted">
+                                  <Text className="text-foreground text-xs">{group.goalCount} goals</Text>
+                                </Badge>
+                              </View>
                             </View>
-                          </View>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </View>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </View>
+                  ) : (
+                    <Card>
+                      <CardContent className="py-8">
+                        <View className="items-center gap-3">
+                          <Globe size={40} color="#d1d5db" />
+                          <Text className="text-center text-muted">
+                            No public crews found
+                          </Text>
+                        </View>
+                      </CardContent>
+                    </Card>
+                  )}
                 </View>
               </TabsContent>
             </Tabs>

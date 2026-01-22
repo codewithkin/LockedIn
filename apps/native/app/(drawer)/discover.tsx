@@ -6,9 +6,10 @@ import {
   Target,
   TrendingUp,
   Users,
+  RefreshCw,
 } from "lucide-react-native";
-import { Text, View, Pressable, ScrollView, TextInput } from "react-native";
-import { useState, useMemo } from "react";
+import { Text, View, Pressable, ScrollView, TextInput, RefreshControl, ActivityIndicator } from "react-native";
+import { useState, useEffect, useCallback } from "react";
 
 import { Container } from "@/components/container";
 import { FadeIn, SlideIn } from "@/components/animations";
@@ -17,83 +18,58 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-// Mock data for public groups
-const PUBLIC_GROUPS = [
-  {
-    id: "g1",
-    name: "Fitness Warriors",
-    description: "Dedicated to achieving fitness goals together",
-    memberCount: 128,
-    goalCount: 45,
-    isPublic: true,
-  },
-  {
-    id: "g2",
-    name: "Finance Masters",
-    description: "Building wealth and tracking savings goals",
-    memberCount: 89,
-    goalCount: 32,
-    isPublic: true,
-  },
-  {
-    id: "g3",
-    name: "Book Club 2026",
-    description: "Read more books and share insights",
-    memberCount: 56,
-    goalCount: 24,
-    isPublic: true,
-  },
-];
-
-// Mock data for public people to follow
-const PUBLIC_PEOPLE = [
-  {
-    id: "p1",
-    name: "Alex Chen",
-    bio: "Fitness enthusiast and goal setter",
-    followerCount: 342,
-    isFollowing: false,
-  },
-  {
-    id: "p2",
-    name: "Sarah Johnson",
-    bio: "Financial freedom advocate",
-    followerCount: 512,
-    isFollowing: false,
-  },
-  {
-    id: "p3",
-    name: "Mike Wilson",
-    bio: "Entrepreneur and accountability partner",
-    followerCount: 289,
-    isFollowing: true,
-  },
-];
+import { useDiscover } from "@/hooks/use-data";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function DiscoverPage() {
+  const { groups, people, isLoading, refresh, joinGroup, followPerson, fetchGroups, fetchPeople } = useDiscover();
+  const { isAuthenticated } = useAuth();
   const [selectedTab, setSelectedTab] = useState("groups");
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
-  const filteredGroups = useMemo(
-    () =>
-      PUBLIC_GROUPS.filter((g) =>
-        g.name.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    [searchQuery]
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (selectedTab === "groups") {
+        fetchGroups(searchQuery);
+      } else {
+        fetchPeople(searchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedTab]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refresh(searchQuery);
+    setRefreshing(false);
+  }, [refresh, searchQuery]);
+
+  const handleJoinGroup = async (groupId: string) => {
+    await joinGroup(groupId);
+  };
+
+  const handleFollowPerson = async (personId: string) => {
+    await followPerson(personId);
+  };
+
+  const filteredGroups = groups.filter((g) =>
+    g.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredPeople = useMemo(
-    () =>
-      PUBLIC_PEOPLE.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    [searchQuery]
+  const filteredPeople = people.filter((p) =>
+    (p.name || p.email).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <Container className="flex-1 bg-background">
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Header */}
         <FadeIn>
           <View className="p-6">
@@ -114,6 +90,7 @@ export default function DiscoverPage() {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
+              {isLoading && <ActivityIndicator size="small" color="#ff6b35" />}
             </View>
           </View>
         </SlideIn>
@@ -124,17 +101,26 @@ export default function DiscoverPage() {
             <Tabs value={selectedTab} onValueChange={setSelectedTab}>
               <TabsList className="bg-card">
                 <TabsTrigger value="groups">
-                  <Text className="text-sm">Groups</Text>
+                  <Text className="text-sm">Groups ({groups.length})</Text>
                 </TabsTrigger>
                 <TabsTrigger value="people">
-                  <Text className="text-sm">People</Text>
+                  <Text className="text-sm">People ({people.length})</Text>
                 </TabsTrigger>
               </TabsList>
 
               {/* Groups Tab */}
               <TabsContent value="groups">
                 <View className="gap-3 mt-4">
-                  {filteredGroups.length > 0 ? (
+                  {isLoading && groups.length === 0 ? (
+                    <Card>
+                      <CardContent className="py-8">
+                        <View className="items-center gap-2">
+                          <ActivityIndicator size="large" color="#ff6b35" />
+                          <Text className="text-muted">Loading groups...</Text>
+                        </View>
+                      </CardContent>
+                    </Card>
+                  ) : filteredGroups.length > 0 ? (
                     filteredGroups.map((group) => (
                       <Card key={group.id}>
                         <CardContent className="py-4">
@@ -144,12 +130,18 @@ export default function DiscoverPage() {
                                 <Text className="text-base font-semibold text-foreground">
                                   {group.name}
                                 </Text>
-                                <Text className="text-xs text-muted mt-0.5">
-                                  {group.description}
+                                <Text className="text-xs text-muted mt-0.5" numberOfLines={2}>
+                                  {group.description || "No description"}
                                 </Text>
                               </View>
-                              <Button className="px-4 py-2 rounded-lg">
-                                <Text className="text-white font-semibold text-sm">Join</Text>
+                              <Button 
+                                className={`px-4 py-2 rounded-lg ${group.isMember ? "bg-muted" : ""}`}
+                                onPress={() => handleJoinGroup(group.id)}
+                                disabled={group.isMember}
+                              >
+                                <Text className={`font-semibold text-sm ${group.isMember ? "text-foreground" : "text-white"}`}>
+                                  {group.isMember ? "Joined" : "Join"}
+                                </Text>
                               </Button>
                             </View>
 
@@ -226,7 +218,16 @@ export default function DiscoverPage() {
               {/* People Tab */}
               <TabsContent value="people">
                 <View className="gap-3 mt-4">
-                  {filteredPeople.length > 0 ? (
+                  {isLoading && people.length === 0 ? (
+                    <Card>
+                      <CardContent className="py-8">
+                        <View className="items-center gap-2">
+                          <ActivityIndicator size="large" color="#ff6b35" />
+                          <Text className="text-muted">Loading people...</Text>
+                        </View>
+                      </CardContent>
+                    </Card>
+                  ) : filteredPeople.length > 0 ? (
                     filteredPeople.map((person) => (
                       <Card key={person.id}>
                         <CardContent className="py-4">
@@ -234,22 +235,27 @@ export default function DiscoverPage() {
                             <View className="flex-row items-start justify-between gap-2">
                               <View className="flex-1">
                                 <Text className="text-base font-semibold text-foreground">
-                                  {person.name}
+                                  {person.name || person.email}
                                 </Text>
                                 <Text className="text-xs text-muted mt-0.5">
-                                  {person.bio}
+                                  {person.email}
                                 </Text>
                               </View>
-                              <Button className={`px-4 py-2 rounded-lg ${person.isFollowing ? "bg-muted" : ""}`}>
+                              <Button 
+                                className={`px-4 py-2 rounded-lg ${person.isFollowing ? "bg-muted" : ""}`}
+                                onPress={() => handleFollowPerson(person.id)}
+                                disabled={person.isFollowing}
+                              >
                                 <Text className={`font-semibold text-sm ${person.isFollowing ? "text-foreground" : "text-white"}`}>
-                                  {person.isFollowing ? "Following" : "Follow"}
+                                  {person.isFollowing ? "Connected" : "Connect"}
                                 </Text>
                               </Button>
                             </View>
 
                             <Badge className="bg-muted w-max">
-                              <Text className="text-foreground text-xs">
-                                {person.followerCount} followers
+                              <Target size={12} color="#666" />
+                              <Text className="text-foreground text-xs ml-1">
+                                {person.goalCount} goals
                               </Text>
                             </Badge>
                           </View>
@@ -263,6 +269,9 @@ export default function DiscoverPage() {
                           <Users size={40} color="#d1d5db" />
                           <Text className="text-base font-semibold text-foreground">
                             No people found
+                          </Text>
+                          <Text className="text-sm text-muted text-center">
+                            {!isAuthenticated ? "Sign in to discover people" : "No public profiles available"}
                           </Text>
                         </View>
                       </CardContent>

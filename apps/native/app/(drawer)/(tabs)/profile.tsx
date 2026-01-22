@@ -1,7 +1,8 @@
 import { View, Text, ScrollView, RefreshControl } from "react-native";
 import { useState, useCallback } from "react";
 import { useThemeColor } from "heroui-native";
-import { User, Settings, LogOut, Target, Users, Zap } from "lucide-react-native";
+import { User, Settings, LogOut, Target, Users, Zap, LogIn } from "lucide-react-native";
+import { router } from "expo-router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,22 +11,33 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Container } from "@/components/container";
 import { FadeIn, SlideIn } from "@/components/animations";
 import { useUser, useGoals, useGroups, useGang } from "@/hooks/use-data";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const { user, refreshUser } = useUser();
-  const { goals } = useGoals();
-  const { groups } = useGroups();
-  const { members: gangMembers } = useGang();
+  const { goals, refreshGoals } = useGoals();
+  const { groups, refreshGroups } = useGroups();
+  const { members: gangMembers, refreshGang } = useGang();
+  const { isAuthenticated, signOut } = useAuth();
   
   const accentColor = useThemeColor("accent");
   const foregroundColor = useThemeColor("foreground");
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refreshUser();
+    await Promise.all([refreshGoals(), refreshGroups(), refreshGang()]);
     setRefreshing(false);
-  }, [refreshUser]);
+  }, [refreshGoals, refreshGroups, refreshGang]);
+
+  const handleSignOut = useCallback(async () => {
+    await signOut();
+    router.replace("/auth/sign-in");
+  }, [signOut]);
+
+  const handleSignIn = useCallback(() => {
+    router.push("/auth/sign-in");
+  }, []);
 
   const activeGoals = goals.filter((g) => !g.isCompleted);
   const completedGoals = goals.filter((g) => g.isCompleted);
@@ -37,6 +49,35 @@ export default function ProfileScreen() {
         .join("")
         .toUpperCase()
     : "U";
+
+  // Guest mode - show sign in prompt
+  if (!isAuthenticated) {
+    return (
+      <Container className="flex-1 bg-background">
+        <View className="flex-1 items-center justify-center p-6">
+          <FadeIn>
+            <Card className="w-full max-w-sm">
+              <CardContent className="py-8">
+                <View className="items-center gap-4">
+                  <View className="w-20 h-20 rounded-full bg-accent/20 items-center justify-center">
+                    <User size={40} color={accentColor} />
+                  </View>
+                  <Text className="text-xl font-bold text-foreground">Guest Mode</Text>
+                  <Text className="text-center text-muted">
+                    Sign in to view your profile, track your goals, and connect with others
+                  </Text>
+                  <Button onPress={handleSignIn} className="w-full flex-row items-center justify-center gap-2 mt-4">
+                    <LogIn size={18} color="white" />
+                    <Text className="text-white font-semibold">Sign In</Text>
+                  </Button>
+                </View>
+              </CardContent>
+            </Card>
+          </FadeIn>
+        </View>
+      </Container>
+    );
+  }
 
   return (
     <Container
@@ -208,6 +249,7 @@ export default function ProfileScreen() {
           {/* Logout Button */}
           <Button
             variant="destructive"
+            onPress={handleSignOut}
             className="w-full flex-row items-center justify-center gap-2 rounded-xl py-3"
           >
             <LogOut size={18} color="white" />

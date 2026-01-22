@@ -13,8 +13,8 @@ import { useGoals, useAnalytics } from "@/hooks/use-data";
 import { UserMenu } from "@/components/user-menu";
 
 export default function CockpitScreen() {
-  const { goals } = useGoals();
-  const { analytics } = useAnalytics();
+  const { goals, refreshGoals } = useGoals();
+  const { analytics, platform, refresh: refreshAnalytics, isLoading: isLoadingAnalytics } = useAnalytics();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState("overview");
   
@@ -25,9 +25,9 @@ export default function CockpitScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await new Promise((r) => setTimeout(r, 500));
+    await Promise.all([refreshGoals(), refreshAnalytics()]);
     setRefreshing(false);
-  }, []);
+  }, [refreshGoals, refreshAnalytics]);
 
   const activeGoals = goals.filter((g) => !g.isCompleted);
   const completedGoals = goals.filter((g) => g.isCompleted);
