@@ -1,31 +1,42 @@
 import { View, Text, ScrollView, RefreshControl } from "react-native";
 import { useState, useCallback } from "react";
 import { useThemeColor } from "heroui-native";
-import { User, Settings, LogOut } from "lucide-react-native";
+import { User, Settings, LogOut, Target, Users, Zap } from "lucide-react-native";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Container } from "@/components/container";
 import { FadeIn, SlideIn } from "@/components/animations";
+import { useUser, useGoals, useGroups, useGang } from "@/hooks/use-data";
 
 export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const { user, refreshUser } = useUser();
+  const { goals } = useGoals();
+  const { groups } = useGroups();
+  const { members: gangMembers } = useGang();
+  
   const accentColor = useThemeColor("accent");
   const foregroundColor = useThemeColor("foreground");
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await new Promise((r) => setTimeout(r, 500));
+    await refreshUser();
     setRefreshing(false);
-  }, []);
+  }, [refreshUser]);
 
-  // TODO: Replace with real user data from API
-  const user = {
-    id: "user-1",
-    name: "John Doe",
-    email: "john@example.com",
-    avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-  };
+  const activeGoals = goals.filter((g) => !g.isCompleted);
+  const completedGoals = goals.filter((g) => g.isCompleted);
+
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : "U";
 
   return (
     <Container
@@ -40,46 +51,123 @@ export default function ProfileScreen() {
           <Card className="mb-6">
             <CardContent className="py-6">
               <View className="items-center gap-4">
-                <Avatar alt={user.name}>
-                  <AvatarImage source={{ uri: user.avatarUrl }} />
+                <Avatar alt={user?.name || "User"} className="w-20 h-20">
+                  <AvatarImage source={{ uri: user?.avatarUrl }} />
                   <AvatarFallback>
-                    <Text className="font-semibold">
-                      {user.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </Text>
+                    <Text className="font-semibold text-xl">{initials}</Text>
                   </AvatarFallback>
                 </Avatar>
                 <View className="items-center gap-1">
                   <Text className="text-xl font-bold text-foreground">
-                    {user.name}
+                    {user?.name || "User"}
                   </Text>
-                  <Text className="text-sm text-muted">{user.email}</Text>
+                  <Text className="text-sm text-muted">{user?.email || "user@example.com"}</Text>
+                  {user?.isPublic && (
+                    <Badge className="mt-2 bg-green-100">
+                      <Text className="text-green-700 text-xs">Public Profile</Text>
+                    </Badge>
+                  )}
                 </View>
               </View>
             </CardContent>
           </Card>
         </FadeIn>
 
-        {/* Stats */}
+        {/* Stats Grid */}
         <SlideIn delay={100}>
-          <Card className="mb-6">
-            <CardContent className="py-6">
-              <View className="flex-row gap-4 justify-around">
+          <View className="flex-row gap-3 mb-6">
+            <Card className="flex-1">
+              <CardContent className="py-4">
                 <View className="items-center gap-2">
-                  <Text className="text-2xl font-bold text-accent">12</Text>
-                  <Text className="text-xs text-muted">Active Goals</Text>
+                  <View className="w-10 h-10 rounded-xl bg-orange-100 items-center justify-center">
+                    <Target size={20} color="#ea580c" />
+                  </View>
+                  <Text className="text-xl font-bold text-foreground">{activeGoals.length}</Text>
+                  <Text className="text-xs text-muted">Active</Text>
                 </View>
+              </CardContent>
+            </Card>
+            
+            <Card className="flex-1">
+              <CardContent className="py-4">
                 <View className="items-center gap-2">
-                  <Text className="text-2xl font-bold text-accent">5</Text>
+                  <View className="w-10 h-10 rounded-xl bg-purple-100 items-center justify-center">
+                    <Zap size={20} color="#a855f7" />
+                  </View>
+                  <Text className="text-xl font-bold text-foreground">{gangMembers.length}</Text>
                   <Text className="text-xs text-muted">Gangs</Text>
                 </View>
+              </CardContent>
+            </Card>
+            
+            <Card className="flex-1">
+              <CardContent className="py-4">
                 <View className="items-center gap-2">
-                  <Text className="text-2xl font-bold text-accent">8</Text>
+                  <View className="w-10 h-10 rounded-xl bg-blue-100 items-center justify-center">
+                    <Users size={20} color="#3b82f6" />
+                  </View>
+                  <Text className="text-xl font-bold text-foreground">{groups.length}</Text>
                   <Text className="text-xs text-muted">Groups</Text>
                 </View>
-              </View>
+              </CardContent>
+            </Card>
+          </View>
+        </SlideIn>
+
+        {/* Goals Table */}
+        <SlideIn delay={150}>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Recent Goals</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead flex={2}>Goal</TableHead>
+                    <TableHead>Progress</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {goals.length === 0 ? (
+                    <TableRow isLast>
+                      <TableCell flex={4}>
+                        <Text className="text-muted text-center py-4">No goals yet</Text>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    goals.slice(0, 5).map((goal, index) => {
+                      const progress = Math.round((goal.currentValue / goal.targetValue) * 100);
+                      const isCompleted = goal.isCompleted;
+
+                      return (
+                        <TableRow key={goal.id} isLast={index === Math.min(4, goals.length - 1)}>
+                          <TableCell flex={2}>
+                            <Text className="text-sm text-foreground" numberOfLines={1}>
+                              {goal.title}
+                            </Text>
+                          </TableCell>
+                          <TableCell>
+                            <Text className="text-sm text-foreground">{progress}%</Text>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={isCompleted ? "bg-green-100" : "bg-orange-100"}>
+                              <Text
+                                className={`text-xs font-semibold ${
+                                  isCompleted ? "text-green-700" : "text-orange-700"
+                                }`}
+                              >
+                                {isCompleted ? "Done" : "Active"}
+                              </Text>
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </SlideIn>
@@ -94,12 +182,8 @@ export default function ProfileScreen() {
                   <View className="flex-row items-center gap-3 flex-1">
                     <Settings size={20} color={accentColor} />
                     <View>
-                      <Text className="font-semibold text-foreground">
-                        Account Settings
-                      </Text>
-                      <Text className="text-xs text-muted">
-                        Manage your account preferences
-                      </Text>
+                      <Text className="font-semibold text-foreground">Account Settings</Text>
+                      <Text className="text-xs text-muted">Manage your account preferences</Text>
                     </View>
                   </View>
                 </View>
@@ -112,12 +196,8 @@ export default function ProfileScreen() {
                   <View className="flex-row items-center gap-3 flex-1">
                     <User size={20} color={accentColor} />
                     <View>
-                      <Text className="font-semibold text-foreground">
-                        Profile
-                      </Text>
-                      <Text className="text-xs text-muted">
-                        Edit your profile information
-                      </Text>
+                      <Text className="font-semibold text-foreground">Edit Profile</Text>
+                      <Text className="text-xs text-muted">Update your profile information</Text>
                     </View>
                   </View>
                 </View>
@@ -126,7 +206,10 @@ export default function ProfileScreen() {
           </View>
 
           {/* Logout Button */}
-          <Button variant="destructive" className="w-full flex-row items-center justify-center gap-2 rounded-xl py-3">
+          <Button
+            variant="destructive"
+            className="w-full flex-row items-center justify-center gap-2 rounded-xl py-3"
+          >
             <LogOut size={18} color="white" />
             <Text className="text-white font-semibold">Logout</Text>
           </Button>

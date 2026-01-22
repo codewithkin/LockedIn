@@ -5,6 +5,7 @@ import React, { useCallback } from "react";
 import { Text, View } from "react-native";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UserMenu } from "@/components/user-menu";
 
 function DrawerLayout() {
   const themeColorForeground = useThemeColor("foreground");
@@ -12,7 +13,12 @@ function DrawerLayout() {
   const themeColorMuted = useThemeColor("muted");
   const themeColorAccent = useThemeColor("accent");
 
-  const renderThemeToggle = useCallback(() => <ThemeToggle />, []);
+  const renderHeaderRight = useCallback(() => (
+    <View className="flex-row items-center gap-3 mr-4">
+      <ThemeToggle />
+      <UserMenu />
+    </View>
+  ), []);
 
   return (
     <Drawer
@@ -28,7 +34,7 @@ function DrawerLayout() {
           fontWeight: "600",
           color: themeColorForeground,
         },
-        headerRight: renderThemeToggle,
+        headerRight: renderHeaderRight,
         drawerStyle: { 
           backgroundColor: themeColorBackground,
         },
