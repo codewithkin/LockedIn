@@ -1,5 +1,4 @@
-import { MotiView } from "moti";
-import { Surface, useThemeColor, Button } from "heroui-native";
+import { Text, View, ScrollView, Pressable, Linking } from "react-native";
 import {
   Code,
   Heart,
@@ -9,219 +8,155 @@ import {
   ExternalLink,
   Github,
   Linkedin,
-  MapPin,
   Star,
   Zap,
   Award,
 } from "lucide-react-native";
-import { Text, View, Pressable, ScrollView, Image, Linking } from "react-native";
 
 import { Container } from "@/components/container";
-import { FadeIn, SlideIn, ScaleIn } from "@/components/animations";
+import { FadeIn, SlideIn } from "@/components/animations";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
-function FeatureItem({
-  icon: Icon,
-  title,
-  description,
-  color,
-  index = 0,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  color: string;
-  index?: number;
-}) {
+const FEATURES = [
+  {
+    icon: Target,
+    title: "Goal Tracking",
+    description: "Set and track goals with visual progress",
+    color: "#ff6b35",
+  },
+  {
+    icon: Users,
+    title: "Accountability Groups",
+    description: "Join groups and stay accountable with others",
+    color: "#00b4d8",
+  },
+  {
+    icon: Sparkles,
+    title: "Progress Analytics",
+    description: "See your progress with detailed analytics",
+    color: "#ffd60a",
+  },
+  {
+    icon: Award,
+    title: "Achievements",
+    description: "Unlock badges and celebrate milestones",
+    color: "#00b4d8",
+  },
+];
+
+export default function AboutPage() {
   return (
-    <SlideIn delay={index * 50}>
-      <View className="flex-row items-start mb-4">
-        <View
-          className="w-10 h-10 rounded-xl items-center justify-center mr-4"
-          style={{ backgroundColor: color + "20" }}
-        >
-          <Icon size={20} color={color} />
-        </View>
-        <View className="flex-1">
-          <Text className="text-foreground font-semibold text-base">{title}</Text>
-          <Text className="text-muted text-sm mt-0.5">{description}</Text>
-        </View>
-      </View>
-    </SlideIn>
-  );
-}
-
-function LinkButton({
-  icon: Icon,
-  label,
-  url,
-  color,
-}: {
-  icon: React.ElementType;
-  label: string;
-  url: string;
-  color: string;
-}) {
-  const mutedColor = useThemeColor("muted");
-
-  return (
-    <Pressable onPress={() => Linking.openURL(url)}>
-      {({ pressed }) => (
-        <MotiView animate={{ scale: pressed ? 0.95 : 1 }} transition={{ type: "timing", duration: 100 }}>
-          <Surface variant="secondary" className="p-4 rounded-xl flex-row items-center mb-3">
-            <View
-              className="w-9 h-9 rounded-lg items-center justify-center mr-3"
-              style={{ backgroundColor: color + "20" }}
-            >
-              <Icon size={18} color={color} />
-            </View>
-            <Text className="text-foreground font-medium flex-1">{label}</Text>
-            <ExternalLink size={16} color={mutedColor} />
-          </Surface>
-        </MotiView>
-      )}
-    </Pressable>
-  );
-}
-
-export default function AboutScreen() {
-  const foregroundColor = useThemeColor("foreground");
-  const accentColor = useThemeColor("accent");
-  const successColor = useThemeColor("success");
-  const warningColor = useThemeColor("warning");
-  const dangerColor = useThemeColor("danger");
-  const mutedColor = useThemeColor("muted");
-
-  const appFeatures = [
-    {
-      icon: Target,
-      title: "Goal Tracking",
-      description: "Set and track daily, weekly, and monthly goals with visual progress",
-      color: accentColor,
-    },
-    {
-      icon: Users,
-      title: "Accountability Groups",
-      description: "Join or create groups to stay accountable with others",
-      color: successColor,
-    },
-    {
-      icon: Star,
-      title: "Gang System",
-      description: "Build mutual connections with like-minded goal achievers",
-      color: warningColor,
-    },
-    {
-      icon: Zap,
-      title: "Smart Reminders",
-      description: "Never miss a check-in with intelligent notifications",
-      color: dangerColor,
-    },
-  ];
-
-  return (
-    <Container className="flex-1">
-      <ScrollView showsVerticalScrollIndicator={false} className="px-4">
-        {/* App Info */}
+    <Container className="flex-1 bg-background">
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
         <FadeIn>
-          <View className="py-6 items-center">
-            <View
-              className="w-20 h-20 rounded-2xl items-center justify-center mb-4"
-              style={{ backgroundColor: accentColor + "20" }}
-            >
-              <Target size={40} color={accentColor} />
+          <View className="p-6 items-center">
+            <View className="w-16 h-16 rounded-2xl bg-accent/20 items-center justify-center mb-4">
+              <Zap size={32} color="#ff6b35" />
             </View>
-            <Text className="text-2xl font-bold text-foreground">LockedIn</Text>
-            <Text className="text-muted text-sm mt-1">Version 1.0.0</Text>
+            <Text className="text-3xl font-bold text-foreground mb-2 text-center">
+              LockedIn
+            </Text>
+            <Text className="text-muted text-base text-center">
+              Your personal accountability app
+            </Text>
+            <Badge className="mt-4 bg-accent/20">
+              <Text className="text-accent text-xs font-semibold">Version 1.0.0</Text>
+            </Badge>
           </View>
         </FadeIn>
 
-        {/* Tagline */}
-        <SlideIn delay={50}>
-          <Surface variant="secondary" className="p-5 rounded-2xl mb-6">
-            <Text className="text-foreground text-center font-medium text-lg leading-relaxed">
-              "Lock in to your goals. Stay accountable. Achieve more together."
-            </Text>
-          </Surface>
-        </SlideIn>
-
-        {/* Features */}
+        {/* About Section */}
         <SlideIn delay={100}>
-          <Text className="text-muted text-xs font-semibold uppercase tracking-wide mb-3 ml-1">
-            Features
-          </Text>
-          <Surface variant="secondary" className="p-4 rounded-2xl mb-6">
-            {appFeatures.map((feature, index) => (
-              <FeatureItem key={index} {...feature} index={index} />
-            ))}
-          </Surface>
-        </SlideIn>
-
-        {/* Creator Section */}
-        <SlideIn delay={200}>
-          <Text className="text-muted text-xs font-semibold uppercase tracking-wide mb-3 ml-1">
-            Meet the Creator
-          </Text>
-          <Surface variant="secondary" className="p-5 rounded-2xl mb-4">
-            <View className="items-center mb-4">
-              <View
-                className="w-16 h-16 rounded-full items-center justify-center mb-3"
-                style={{ backgroundColor: accentColor + "20" }}
-              >
-                <Code size={28} color={accentColor} />
-              </View>
-              <Text className="text-foreground font-bold text-lg">Kin Leon Zinzombe</Text>
-              <View className="flex-row items-center mt-1">
-                <MapPin size={12} color={mutedColor} />
-                <Text className="text-muted text-sm ml-1">Mutare, Zimbabwe</Text>
-              </View>
-              <Text className="text-accent text-sm font-medium mt-1">Fullstack Developer</Text>
-            </View>
-            <Text className="text-muted text-center text-sm leading-relaxed">
-              "I want to build software that not only works but wows – simple, smart, and built to last."
-            </Text>
-            <View className="mt-4 pt-4 border-t border-muted/20">
-              <Text className="text-foreground text-center text-sm leading-relaxed">
-                Need a website? An app? Something totally unique? I turn ideas into smooth, fast, and user-friendly software—no hassle.
-              </Text>
-            </View>
-          </Surface>
-        </SlideIn>
-
-        {/* Creator Links */}
-        <SlideIn delay={250}>
-          <LinkButton
-            icon={ExternalLink}
-            label="Visit codewithkin.space"
-            url="https://codewithkin.space"
-            color={accentColor}
-          />
-          <LinkButton
-            icon={Github}
-            label="GitHub"
-            url="https://github.com/codewithkin"
-            color={foregroundColor}
-          />
-          <LinkButton
-            icon={Linkedin}
-            label="LinkedIn"
-            url="https://www.linkedin.com/in/kinzinzombe-183022239"
-            color="#0077B5"
-          />
-        </SlideIn>
-
-        {/* Made with love */}
-        <SlideIn delay={300}>
-          <View className="py-6 items-center">
-            <View className="flex-row items-center">
-              <Text className="text-muted text-sm">Made with</Text>
-              <Heart size={14} color={dangerColor} fill={dangerColor} className="mx-1" />
-              <Text className="text-muted text-sm">in Zimbabwe</Text>
-            </View>
-            <Text className="text-muted text-xs mt-2">© 2025 Kin Leon Zinzombe</Text>
+          <View className="px-6 mb-8">
+            <Card>
+              <CardContent className="py-6">
+                <Text className="text-base font-semibold text-foreground mb-2">
+                  About LockedIn
+                </Text>
+                <Text className="text-sm text-muted leading-6">
+                  LockedIn is designed to help you achieve your goals through accountability, community,
+                  and consistent progress tracking. Set ambitious goals, track your progress, and stay
+                  motivated with your accountability groups.
+                </Text>
+              </CardContent>
+            </Card>
           </View>
         </SlideIn>
 
-        <View className="h-4" />
+        {/* Features Section */}
+        <SlideIn delay={150}>
+          <View className="px-6 mb-8">
+            <Text className="text-lg font-bold text-foreground mb-4">Features</Text>
+            <View className="gap-3">
+              {FEATURES.map((feature, index) => {
+                const Icon = feature.icon;
+                return (
+                  <Card key={feature.title}>
+                    <CardContent className="py-4">
+                      <View className="flex-row items-start gap-3">
+                        <View
+                          className="w-10 h-10 rounded-lg items-center justify-center"
+                          style={{ backgroundColor: feature.color + "20" }}
+                        >
+                          <Icon size={20} color={feature.color} />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-base font-semibold text-foreground">
+                            {feature.title}
+                          </Text>
+                          <Text className="text-xs text-muted mt-1">
+                            {feature.description}
+                          </Text>
+                        </View>
+                      </View>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </View>
+          </View>
+        </SlideIn>
+
+        {/* Links Section */}
+        <SlideIn delay={200}>
+          <View className="px-6 mb-8">
+            <Text className="text-lg font-bold text-foreground mb-4">Connect</Text>
+            <Button
+              onPress={() => Linking.openURL("https://github.com")}
+              className="mb-3 flex-row items-center justify-between"
+            >
+              <View className="flex-row items-center gap-2">
+                <Github size={18} color="white" />
+                <Text className="text-white font-semibold">GitHub</Text>
+              </View>
+              <ExternalLink size={16} color="white" />
+            </Button>
+            <Button
+              onPress={() => Linking.openURL("https://linkedin.com")}
+              className="bg-muted flex-row items-center justify-between"
+            >
+              <View className="flex-row items-center gap-2">
+                <Linkedin size={18} color="#666" />
+                <Text className="text-foreground font-semibold">LinkedIn</Text>
+              </View>
+              <ExternalLink size={16} color="#666" />
+            </Button>
+          </View>
+        </SlideIn>
+
+        {/* Footer */}
+        <FadeIn delay={250}>
+          <View className="px-6 pb-8 items-center">
+            <View className="flex-row items-center gap-1 mb-2">
+              <Heart size={16} color="#ff6b35" />
+              <Text className="text-sm text-muted">Made with care</Text>
+            </View>
+            <Text className="text-xs text-muted">© 2025 LockedIn. All rights reserved.</Text>
+          </View>
+        </FadeIn>
       </ScrollView>
     </Container>
   );

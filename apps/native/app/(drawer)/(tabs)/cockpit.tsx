@@ -1,21 +1,17 @@
-import { Link } from "expo-router";
+import { View, Text, ScrollView, RefreshControl } from "react-native";
+import { useState, useCallback, useEffect } from "react";
 import { useThemeColor } from "heroui-native";
-import { Plus, Target, TrendingUp, CheckCircle } from "lucide-react-native";
-import { Text, View, RefreshControl, ScrollView } from "react-native";
-import { useState, useCallback } from "react";
-
-import { Container } from "@/components/container";
-import { GoalCard } from "@/components/goal-card";
-import { SlideIn, FadeIn } from "@/components/animations";
-import { Card, CardContent } from "@/components/ui/card";
+import { Target, Zap, Users, TrendingUp } from "lucide-react-native";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Container } from "@/components/container";
+import { FadeIn, SlideIn } from "@/components/animations";
 import { useGoals } from "@/hooks/use-data";
 
-export default function GoalsScreen() {
-  const { goals, refreshGoals } = useGoals();
+export default function CockpitScreen() {
+  const { goals } = useGoals();
   const [refreshing, setRefreshing] = useState(false);
-
+  
   const foregroundColor = useThemeColor("foreground");
   const accentColor = useThemeColor("accent");
   const backgroundColor = useThemeColor("background");
@@ -23,9 +19,8 @@ export default function GoalsScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await new Promise((r) => setTimeout(r, 500));
-    refreshGoals();
     setRefreshing(false);
-  }, [refreshGoals]);
+  }, []);
 
   const activeGoals = goals.filter((g) => !g.isCompleted);
   const completedGoals = goals.filter((g) => g.isCompleted);
@@ -39,15 +34,15 @@ export default function GoalsScreen() {
       }
     >
       <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-        {/* Header Stats */}
+        {/* Header */}
         <FadeIn>
           <View className="p-6">
-            <Text className="text-3xl font-bold text-foreground mb-1">Your Goals</Text>
-            <Text className="text-muted text-base">Track your progress and stay accountable</Text>
+            <Text className="text-3xl font-bold text-foreground mb-2">Welcome Back</Text>
+            <Text className="text-muted text-base">Your progress dashboard</Text>
           </View>
         </FadeIn>
 
-        {/* Quick Stats */}
+        {/* Quick Stats Grid */}
         <SlideIn delay={100}>
           <View className="px-6 mb-6">
             <View className="flex-row gap-3">
@@ -61,7 +56,7 @@ export default function GoalsScreen() {
                     <Text className="text-2xl font-bold text-foreground">
                       {activeGoals.length}
                     </Text>
-                    <Text className="text-xs text-muted text-center">Active</Text>
+                    <Text className="text-xs text-muted text-center">Active Goals</Text>
                   </View>
                 </CardContent>
               </Card>
@@ -71,7 +66,7 @@ export default function GoalsScreen() {
                 <CardContent className="pt-6">
                   <View className="items-center gap-2">
                     <View className="w-12 h-12 rounded-xl bg-green-100 items-center justify-center">
-                      <CheckCircle size={24} color="#22c55e" />
+                      <TrendingUp size={24} color="#22c55e" />
                     </View>
                     <Text className="text-2xl font-bold text-foreground">
                       {completedGoals.length}
@@ -86,7 +81,7 @@ export default function GoalsScreen() {
                 <CardContent className="pt-6">
                   <View className="items-center gap-2">
                     <View className="w-12 h-12 rounded-xl bg-purple-100 items-center justify-center">
-                      <TrendingUp size={24} color="#a855f7" />
+                      <Zap size={24} color="#a855f7" />
                     </View>
                     <Text className="text-2xl font-bold text-foreground">
                       {surpassedCount}
@@ -99,25 +94,24 @@ export default function GoalsScreen() {
           </View>
         </SlideIn>
 
-        {/* Add Goal Button */}
-        <SlideIn delay={150}>
-          <View className="px-6 mb-6">
-            <Link href="/goal/new" asChild>
-              <Button className="w-full flex-row items-center justify-center gap-2 rounded-xl py-3">
-                <Plus size={20} color="white" />
-                <Text className="text-white font-semibold">Create New Goal</Text>
-              </Button>
-            </Link>
-          </View>
-        </SlideIn>
-
         {/* Active Goals Section */}
-        {activeGoals.length > 0 && (
-          <SlideIn delay={200}>
-            <View className="px-6 mb-8">
-              <Text className="text-lg font-bold text-foreground mb-4">Active Goals</Text>
+        <SlideIn delay={200}>
+          <View className="px-6 mb-8">
+            <Text className="text-lg font-bold text-foreground mb-4">Active Goals</Text>
+            {activeGoals.length === 0 ? (
+              <Card>
+                <CardContent className="py-8">
+                  <View className="items-center gap-3">
+                    <Target size={40} color={accentColor + "60"} />
+                    <Text className="text-center text-muted">
+                      No active goals. Create one to get started!
+                    </Text>
+                  </View>
+                </CardContent>
+              </Card>
+            ) : (
               <View className="gap-3">
-                {activeGoals.map((goal) => (
+                {activeGoals.slice(0, 3).map((goal) => (
                   <Card key={goal.id}>
                     <CardContent className="py-4">
                       <View className="gap-3">
@@ -147,63 +141,9 @@ export default function GoalsScreen() {
                   </Card>
                 ))}
               </View>
-            </View>
-          </SlideIn>
-        )}
-
-        {/* Completed Goals Section */}
-        {completedGoals.length > 0 && (
-          <SlideIn delay={250}>
-            <View className="px-6 mb-8">
-              <Text className="text-lg font-bold text-foreground mb-4">Completed</Text>
-              <View className="gap-3">
-                {completedGoals.map((goal) => (
-                  <Card key={goal.id} className="opacity-75">
-                    <CardContent className="py-4">
-                      <View className="gap-3">
-                        <View className="flex-row items-start justify-between">
-                          <Text className="flex-1 font-semibold text-foreground text-base line-through">
-                            {goal.title}
-                          </Text>
-                          <Badge className="bg-green-100">
-                            <Text className="text-green-700 text-xs font-semibold">
-                              100%
-                            </Text>
-                          </Badge>
-                        </View>
-                      </View>
-                    </CardContent>
-                  </Card>
-                ))}
-              </View>
-            </View>
-          </SlideIn>
-        )}
-
-        {/* Empty State */}
-        {goals.length === 0 && (
-          <SlideIn delay={200}>
-            <View className="px-6 mb-8">
-              <Card>
-                <CardContent className="py-12">
-                  <View className="items-center gap-3">
-                    <Target size={48} color={accentColor + "60"} />
-                    <Text className="text-lg font-semibold text-foreground">No goals yet</Text>
-                    <Text className="text-center text-muted text-sm">
-                      Create your first goal and start tracking your progress
-                    </Text>
-                    <Link href="/goal/new" asChild>
-                      <Button className="mt-4 px-6 py-2 rounded-lg flex-row items-center gap-2">
-                        <Plus size={16} color="white" />
-                        <Text className="text-white font-semibold">Create Goal</Text>
-                      </Button>
-                    </Link>
-                  </View>
-                </CardContent>
-              </Card>
-            </View>
-          </SlideIn>
-        )}
+            )}
+          </View>
+        </SlideIn>
       </ScrollView>
     </Container>
   );

@@ -1,4 +1,4 @@
-import { Target, Users, Bell } from "lucide-react-native";
+import { Home, Target, Users, Zap, User } from "lucide-react-native";
 import { Tabs } from "expo-router";
 import { useThemeColor } from "heroui-native";
 
@@ -10,7 +10,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
         headerStyle: {
           backgroundColor: themeColorBackground,
         },
@@ -21,12 +21,25 @@ export default function TabLayout() {
         },
         tabBarStyle: {
           backgroundColor: themeColorBackground,
-          borderTopColor: "transparent",
+          borderTopColor: themeColorForeground + "15",
+          paddingBottom: 5,
         },
-        tabBarActiveTintColor: themeColorForeground,
-        tabBarInactiveTintColor: themeColorForeground + "80",
+        tabBarActiveTintColor: accentColor,
+        tabBarInactiveTintColor: themeColorForeground + "60",
       }}
     >
+      {/* Cockpit - Home */}
+      <Tabs.Screen
+        name="cockpit"
+        options={{
+          title: "Cockpit",
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Home size={size} color={color} />
+          ),
+        }}
+      />
+      
+      {/* Goals */}
       <Tabs.Screen
         name="index"
         options={{
@@ -36,12 +49,36 @@ export default function TabLayout() {
           ),
         }}
       />
+      
+      {/* Gangs */}
+      <Tabs.Screen
+        name="gangs"
+        options={{
+          title: "Gangs",
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Zap size={size} color={color} />
+          ),
+        }}
+      />
+      
+      {/* Groups */}
       <Tabs.Screen
         name="two"
         options={{
           title: "Groups",
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Users size={size} color={color} />
+          ),
+        }}
+      />
+      
+      {/* Profile */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <User size={size} color={color} />
           ),
         }}
       />

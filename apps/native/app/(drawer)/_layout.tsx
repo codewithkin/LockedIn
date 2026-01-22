@@ -1,4 +1,4 @@
-import { Compass, Info, Twitter, Home, Users, Bell } from "lucide-react-native";
+import { Compass, Info, Twitter, Settings, Bell } from "lucide-react-native";
 import { Drawer } from "expo-router/drawer";
 import { useThemeColor } from "heroui-native";
 import React, { useCallback } from "react";
@@ -17,35 +17,35 @@ function DrawerLayout() {
   return (
     <Drawer
       screenOptions={{
+        headerShown: true,
         headerTintColor: themeColorForeground,
-        headerStyle: { backgroundColor: themeColorBackground },
+        headerStyle: { 
+          backgroundColor: themeColorBackground,
+          borderBottomColor: themeColorForeground + "15",
+          borderBottomWidth: 1,
+        },
         headerTitleStyle: {
           fontWeight: "600",
           color: themeColorForeground,
         },
         headerRight: renderThemeToggle,
-        drawerStyle: { backgroundColor: themeColorBackground },
+        drawerStyle: { 
+          backgroundColor: themeColorBackground,
+        },
         drawerActiveTintColor: themeColorAccent,
         drawerInactiveTintColor: themeColorMuted,
         drawerActiveBackgroundColor: themeColorAccent + "15",
+        drawerLabelStyle: {
+          marginLeft: -16,
+        },
       }}
     >
-      {/* Main Tabs - Hidden from drawer, accessed via bottom tabs */}
+      {/* Main Tabs */}
       <Drawer.Screen
         name="(tabs)"
         options={{
-          headerShown: false,
-          drawerLabel: ({ focused }) => (
-            <Text style={{ color: focused ? themeColorAccent : themeColorMuted, fontWeight: "500" }}>
-              Home
-            </Text>
-          ),
-          drawerIcon: ({ size, focused }) => (
-            <Home
-              size={size}
-              color={focused ? themeColorAccent : themeColorMuted}
-            />
-          ),
+          headerTitle: "LockedIn",
+          drawerItemStyle: { display: "none" },
         }}
       />
       
@@ -60,7 +60,7 @@ function DrawerLayout() {
             </Text>
           ),
           drawerIcon: ({ size, focused }) => (
-            <Users
+            <Settings
               size={size}
               color={focused ? themeColorAccent : themeColorMuted}
             />
