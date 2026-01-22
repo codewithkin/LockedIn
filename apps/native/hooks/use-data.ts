@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import type { Goal, GoalUpdate, Group, GroupMember, CreateGoalInput, CreateGoalUpdateInput, CreateGroupInput } from "@/types";
 import { goalsApi, groupsApi, getToken } from "@/lib/api";
 
@@ -606,5 +606,320 @@ export function useGang() {
     declineRequest,
     removeMember,
     refreshGang,
+  };
+}
+
+// ============== User Hook ==============
+
+interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  isPublic: boolean;
+  createdAt: Date;
+}
+
+// Mock user data
+const mockUser: UserData = {
+  id: "user_1",
+  name: "John Doe",
+  email: "john@example.com",
+  avatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+  isPublic: true,
+  createdAt: new Date("2025-12-01"),
+};
+
+export function useUser() {
+  const [user, setUser] = useState<UserData | null>(mockUser);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refreshUser = useCallback(async () => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+    setUser({ ...mockUser });
+    setIsLoading(false);
+  }, []);
+
+  const updateUser = useCallback(async (updates: Partial<UserData>) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 500));
+    setUser((prev) => (prev ? { ...prev, ...updates } : null));
+    setIsLoading(false);
+  }, []);
+
+  return {
+    user,
+    isLoading,
+    error,
+    refreshUser,
+    updateUser,
+  };
+}
+
+// ============== Notifications Hook ==============
+
+interface NotificationData {
+  id: string;
+  title: string;
+  body: string;
+  type: "goal_completed" | "goal_surpassed" | "group_invite" | "goal_update" | "gang_request";
+  isRead: boolean;
+  createdAt: Date;
+  data?: Record<string, any>;
+}
+
+// Mock notifications
+let notificationsStore: NotificationData[] = [
+  {
+    id: "notif_1",
+    title: "Goal Completed!",
+    body: "You completed your 'Read 4 books' goal!",
+    type: "goal_completed",
+    isRead: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 30),
+  },
+  {
+    id: "notif_2",
+    title: "New Gang Request",
+    body: "Sarah Johnson wants to connect with you",
+    type: "gang_request",
+    isRead: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
+  },
+  {
+    id: "notif_3",
+    title: "Group Invite",
+    body: "You've been invited to join 'Morning Runners'",
+    type: "group_invite",
+    isRead: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
+  },
+];
+
+export function useNotifications() {
+  const [notifications, setNotifications] = useState<NotificationData[]>(notificationsStore);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const refreshNotifications = useCallback(async () => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+    setNotifications([...notificationsStore]);
+    setIsLoading(false);
+  }, []);
+
+  const markAsRead = useCallback(async (notificationId: string) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const index = notificationsStore.findIndex((n) => n.id === notificationId);
+    if (index !== -1) {
+      notificationsStore[index] = { ...notificationsStore[index], isRead: true };
+    }
+
+    setNotifications([...notificationsStore]);
+    setIsLoading(false);
+  }, []);
+
+  const markAllAsRead = useCallback(async () => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+
+    notificationsStore = notificationsStore.map((n) => ({ ...n, isRead: true }));
+    setNotifications([...notificationsStore]);
+    setIsLoading(false);
+  }, []);
+
+  const deleteNotification = useCallback(async (notificationId: string) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 200));
+
+    notificationsStore = notificationsStore.filter((n) => n.id !== notificationId);
+    setNotifications([...notificationsStore]);
+    setIsLoading(false);
+  }, []);
+
+  return {
+    notifications,
+    unreadCount,
+    isLoading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    refreshNotifications,
+  };
+}
+
+// ============== Crews Hook ==============
+
+interface CrewData {
+  id: string;
+  name: string;
+  description?: string;
+  avatarUrl?: string;
+  memberCount: number;
+  goalCount: number;
+  isOwner: boolean;
+  createdAt: Date;
+}
+
+// Mock crew data
+let crewsStore: CrewData[] = [
+  {
+    id: "crew_1",
+    name: "Morning Hustlers",
+    description: "Early risers achieving their dreams",
+    memberCount: 12,
+    goalCount: 8,
+    isOwner: true,
+    createdAt: new Date("2025-01-15"),
+  },
+  {
+    id: "crew_2",
+    name: "Code Warriors",
+    description: "Developers building the future",
+    memberCount: 25,
+    goalCount: 15,
+    isOwner: false,
+    createdAt: new Date("2025-01-20"),
+  },
+];
+
+export function useCrews() {
+  const [crews, setCrews] = useState<CrewData[]>(crewsStore);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const myCrews = crews.filter((c) => c.isOwner);
+  const joinedCrews = crews.filter((c) => !c.isOwner);
+
+  const refreshCrews = useCallback(async () => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+    setCrews([...crewsStore]);
+    setIsLoading(false);
+  }, []);
+
+  const createCrew = useCallback(async (input: { name: string; description?: string }) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 500));
+
+    const newCrew: CrewData = {
+      id: generateId(),
+      name: input.name,
+      description: input.description,
+      memberCount: 1,
+      goalCount: 0,
+      isOwner: true,
+      createdAt: new Date(),
+    };
+
+    crewsStore = [...crewsStore, newCrew];
+    setCrews([...crewsStore]);
+    setIsLoading(false);
+    return newCrew;
+  }, []);
+
+  const leaveCrew = useCallback(async (crewId: string) => {
+    setIsLoading(true);
+    await new Promise((r) => setTimeout(r, 300));
+
+    crewsStore = crewsStore.filter((c) => c.id !== crewId);
+    setCrews([...crewsStore]);
+    setIsLoading(false);
+  }, []);
+
+  return {
+    crews,
+    myCrews,
+    joinedCrews,
+    isLoading,
+    createCrew,
+    leaveCrew,
+    refreshCrews,
+  };
+}
+
+// ============== Analytics Hook ==============
+
+interface AnalyticsData {
+  goalsCompleted: number;
+  goalsSurpassed: number;
+  totalProgress: number;
+  weeklyProgress: { day: string; value: number }[];
+  categoryBreakdown: { category: string; count: number; color: string }[];
+  monthlyTrends: { month: string; completed: number; active: number }[];
+}
+
+export function useAnalytics() {
+  const { goals } = useGoals();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const analytics: AnalyticsData = React.useMemo(() => {
+    const completed = goals.filter((g) => g.isCompleted);
+    const surpassed = goals.filter((g) => g.isSurpassed);
+    const active = goals.filter((g) => !g.isCompleted);
+
+    // Calculate total progress across all active goals
+    const totalProgress = active.length > 0
+      ? active.reduce((acc, g) => acc + (g.currentValue / g.targetValue) * 100, 0) / active.length
+      : 0;
+
+    // Weekly progress (mock data for now)
+    const weeklyProgress = [
+      { day: 'Mon', value: 3 },
+      { day: 'Tue', value: 5 },
+      { day: 'Wed', value: 2 },
+      { day: 'Thu', value: 8 },
+      { day: 'Fri', value: 4 },
+      { day: 'Sat', value: 6 },
+      { day: 'Sun', value: 3 },
+    ];
+
+    // Category breakdown
+    const categoryMap = new Map<string, number>();
+    goals.forEach((g) => {
+      const cat = g.category || 'other';
+      categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1);
+    });
+
+    const categoryColors: Record<string, string> = {
+      financial: '#22c55e',
+      fitness: '#3b82f6',
+      health: '#ef4444',
+      learning: '#a855f7',
+      personal: '#f59e0b',
+      other: '#6b7280',
+    };
+
+    const categoryBreakdown = Array.from(categoryMap.entries()).map(([category, count]) => ({
+      category,
+      count,
+      color: categoryColors[category] || '#6b7280',
+    }));
+
+    // Monthly trends (mock data)
+    const monthlyTrends = [
+      { month: 'Oct', completed: 2, active: 5 },
+      { month: 'Nov', completed: 4, active: 3 },
+      { month: 'Dec', completed: 3, active: 4 },
+      { month: 'Jan', completed: completed.length, active: active.length },
+    ];
+
+    return {
+      goalsCompleted: completed.length,
+      goalsSurpassed: surpassed.length,
+      totalProgress: Math.round(totalProgress),
+      weeklyProgress,
+      categoryBreakdown,
+      monthlyTrends,
+    };
+  }, [goals]);
+
+  return {
+    analytics,
+    isLoading,
   };
 }
