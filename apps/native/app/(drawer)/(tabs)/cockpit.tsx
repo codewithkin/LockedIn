@@ -1,7 +1,7 @@
 import { View, Text, ScrollView, RefreshControl, Pressable } from "react-native";
 import { useState, useCallback } from "react";
 import { useThemeColor } from "heroui-native";
-import { Target, Zap, TrendingUp, BarChart3, LogIn, Medal } from "lucide-react-native";
+import { Target, Zap, TrendingUp, BarChart3, LogIn, Medal, Plus } from "lucide-react-native";
 import { router } from "expo-router";
 import { BarChart, PieChart, LineChart } from "react-native-gifted-charts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Container } from "@/components/container";
 import { FadeIn, SlideIn } from "@/components/animations";
+import { GoalCard } from "@/components/goal-card";
+import { Leaderboard } from "@/components/leaderboard";
 import { useGoals, useAnalytics, useLeaderboard } from "@/hooks/use-data";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -83,6 +85,21 @@ export default function CockpitScreen() {
           </View>
         </FadeIn>
 
+        {/* Create Goal Button */}
+        {isAuthenticated && (
+          <SlideIn delay={25}>
+            <View className="px-4 sm:px-6 mb-6">
+              <Button
+                onPress={() => router.push("/create-goal")}
+                className="flex-row items-center justify-center gap-2 w-full py-3 sm:py-4 light:bg-blue-600 dark:bg-blue-700 rounded-lg"
+              >
+                <Plus size={20} color="white" />
+                <Text className="text-white text-base sm:text-lg font-semibold">Create New Goal</Text>
+              </Button>
+            </View>
+          </SlideIn>
+        )}
+
         {/* Tabs */}
         <SlideIn delay={50}>
           <View className="px-6 mb-6">
@@ -101,52 +118,35 @@ export default function CockpitScreen() {
 
               {/* Overview Tab */}
               <TabsContent value="overview">
-                {/* Leaderboard */}
-                {leaderboard.length > 0 && (
-                  <SlideIn delay={50}>
-                    <Card className="mt-4">
-                      <CardHeader>
-                        <View className="flex-row items-center gap-2">
-                          <Medal size={20} color={accentColor} />
-                          <CardTitle>Top Achievers</CardTitle>
-                        </View>
-                      </CardHeader>
-                      <CardContent>
-                        <View className="gap-3">
-                          {leaderboard.map((user, index) => (
-                            <View key={user.id} className="flex-row items-center gap-3 py-3 border-b light:border-gray-200 dark:border-gray-700 last:border-0">
-                              <Text className="text-lg font-bold text-muted w-8">{user.rank}</Text>
-                              <Avatar alt={user.name} className="w-10 h-10">
-                                <AvatarImage source={{ uri: user.avatarUrl }} />
-                                <AvatarFallback>
-                                  <Text className="font-semibold text-sm">
-                                    {user.name.slice(0, 2).toUpperCase()}
-                                  </Text>
-                                </AvatarFallback>
-                              </Avatar>
-                              <View className="flex-1">
-                                <Text className="text-sm font-semibold text-foreground">
-                                  {user.name}
-                                </Text>
-                                <Text className="text-xs text-muted">
-                                  {user.completedGoals} completed goals
-                                </Text>
-                              </View>
-                              <Badge className="bg-accent/20">
-                                <Text className="text-accent text-xs font-semibold">
-                                  {user.completedGoals}
-                                </Text>
-                              </Badge>
-                            </View>
-                          ))}
-                        </View>
-                      </CardContent>
-                    </Card>
+                {/* Leaderboard Component */}
+                <SlideIn delay={50}>
+                  <Leaderboard
+                    users={leaderboard.slice(0, 3)}
+                    title="Top Achievers"
+                    entityType="global"
+                  />
+                </SlideIn>
+
+                {/* Active Goals Section */}
+                {activeGoals.length > 0 && (
+                  <SlideIn delay={100}>
+                    <View className="mb-6">
+                      <View className="px-4 sm:px-6 mb-3 sm:mb-4 flex-row items-center justify-between">
+                        <Text className="text-lg sm:text-xl font-bold text-foreground">
+                          Active Goals ({activeGoals.length})
+                        </Text>
+                      </View>
+                      <View className="px-4 sm:px-6 gap-3 sm:gap-4">
+                        {activeGoals.map((goal, index) => (
+                          <GoalCard key={goal.id} goal={goal} index={index} />
+                        ))}
+                      </View>
+                    </View>
                   </SlideIn>
                 )}
 
                 {/* Quick Stats Grid */}
-                <View className="mt-4">
+                <View className="mt-4 px-4 sm:px-6">
                   <View className="flex-row gap-3 flex-wrap">
                     <Card className="flex-1 min-w-[32%]">
                       <CardContent className="pt-4 sm:pt-6">

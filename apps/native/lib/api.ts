@@ -217,9 +217,24 @@ export const discoverApi = {
       "/api/discover/stats"
     ),
 
-  getLeaderboard: () =>
+  getLeaderboard: (limit: number = 10) =>
     request<{ success: boolean; leaderboard: LeaderboardUser[] }>(
-      "/api/discover/leaderboard"
+      `/api/discover/leaderboard?limit=${limit}`
+    ),
+
+  getGoalLeaderboard: (goalId: string, limit: number = 10) =>
+    request<{ success: boolean; leaderboard: LeaderboardUser[] }>(
+      `/api/discover/leaderboard/goals/${goalId}?limit=${limit}`
+    ),
+
+  getGangLeaderboard: (gangId: string, limit: number = 10) =>
+    request<{ success: boolean; leaderboard: LeaderboardUser[] }>(
+      `/api/discover/leaderboard/gangs/${gangId}?limit=${limit}`
+    ),
+
+  getGroupLeaderboard: (groupId: string, limit: number = 10) =>
+    request<{ success: boolean; leaderboard: LeaderboardUser[] }>(
+      `/api/discover/leaderboard/groups/${groupId}?limit=${limit}`
     ),
 };
 
@@ -389,9 +404,7 @@ export interface LeaderboardUser {
   id: string;
   name: string;
   avatarUrl?: string;
-  completedGoals: number;
-}
-  gangCount: number;
-  avgProgress: number;
-  categoryBreakdown: { category: string; count: number }[];
+  completedGoals?: number;
+  completionPercentage?: number;
+  contributions?: number;
 }

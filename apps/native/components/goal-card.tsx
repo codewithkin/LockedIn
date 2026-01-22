@@ -1,10 +1,10 @@
-import { MotiView } from "moti";
 import { Link } from "expo-router";
-import { Surface, Chip, useThemeColor } from "heroui-native";
-import { Target, TrendingUp, CheckCircle, Calendar, ChevronRight } from "lucide-react-native";
+import { useThemeColor } from "heroui-native";
+import { Calendar, MessageCircle2 } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
-import type { Goal } from "@/types";
-import { AnimatedProgressBar, SlideIn } from "./animations";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import type { Goal } from "@/lib/api";
 
 interface GoalCardProps {
   goal: Goal;
@@ -12,107 +12,100 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal, index = 0 }: GoalCardProps) {
-  const successColor = useThemeColor("success");
-  const warningColor = useThemeColor("warning");
-  const foregroundColor = useThemeColor("foreground");
-  const mutedColor = useThemeColor("muted");
-
+  const accentColor = useThemeColor("accent");
   const progress = Math.round((goal.currentValue / goal.targetValue) * 100);
-  const daysRemaining = Math.max(
-    0,
-    Math.ceil((new Date(goal.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-  );
 
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  // Determine status badge color
   const getStatusColor = () => {
-    if (goal.isSurpassed) return "warning";
-    if (goal.isCompleted) return "success";
-    if (daysRemaining <= 3) return "danger";
-    return "default";
+    if (goal.isSurpassed) return "light:bg-purple-100 dark:bg-purple-900/40";
+    if (goal.isCompleted) return "light:bg-green-100 dark:bg-green-900/40";
+    return "light:bg-orange-100 dark:bg-orange-900/40";
   };
 
-  const getStatusText = () => {
-    if (goal.isSurpassed) return "Surpassed!";
-    if (goal.isCompleted) return "Completed";
-    if (daysRemaining === 0) return "Due today";
-    if (daysRemaining <= 3) return `${daysRemaining}d left`;
-    return `${daysRemaining} days`;
+  const getStatusTextColor = () => {
+    if (goal.isSurpassed) return "light:text-purple-700 dark:text-purple-300";
+    if (goal.isCompleted) return "light:text-green-700 dark:text-green-300";
+    return "light:text-orange-700 dark:text-orange-300";
   };
+
+  const status = goal.isSurpassed
+    ? "Surpassed"
+    : goal.isCompleted
+    ? "Completed"
+    : "In Progress";
 
   return (
-    <SlideIn delay={index * 80}>
-      <Link href={`/goal/${goal.id}`} asChild>
-        <Pressable>
-          {({ pressed }) => (
-            <MotiView
-              animate={{ scale: pressed ? 0.98 : 1 }}
-              transition={{ type: "timing", duration: 100 }}
-            >
-              <Surface
-                variant="secondary"
-                className="p-4 rounded-xl mb-3"
-              >
-                <View className="flex-row items-start justify-between mb-3">
-                  <View className="flex-1 mr-3">
-                    <View className="flex-row items-center mb-1">
-                      {goal.isSurpassed ? (
-                        <TrendingUp size={16} color={warningColor} />
-                      ) : goal.isCompleted ? (
-                        <CheckCircle size={16} color={successColor} />
-                      ) : (
-                        <Target size={16} color={foregroundColor} />
-                      )}
-                      <Text className="text-foreground font-semibold text-base ml-2">
-                        {goal.title}
-                      </Text>
-                    </View>
-                    {goal.description && (
-                      <Text className="text-muted text-xs" numberOfLines={1}>
-                        {goal.description}
-                      </Text>
-                    )}
-                  </View>
-                  <Chip
-                    size="sm"
-                    color={getStatusColor()}
-                  >
-                    <Chip.Label>{getStatusText()}</Chip.Label>
-                  </Chip>
-                </View>
+    <Link href={`/goal/${goal.id}`} asChild>
+      <Pressable>
+        <Card className="light:bg-white dark:bg-slate-800 mb-3 sm:mb-4">
+          <CardContent className="py-3 sm:py-4 px-4 sm:px-6">
+            <View className="gap-3">
+              {/* Header: Title and Status */}
+              <View className="flex-row items-start justify-between gap-2">
+                <Text
+                  className="flex-1 text-sm sm:text-base font-semibold text-foreground"
+                  numberOfLines={2}
+                >
+                  {goal.title}
+                </Text>
+                <Badge className={getStatusColor()}>
+                  <Text className={`text-xs font-semibold ${getStatusTextColor()}`}>
+                    {status}
+                  </Text>
+                </Badge>
+              </View>
 
-                <View className="mb-3">
-                  <View className="flex-row items-baseline justify-between mb-2">
-                    <Text className="text-foreground font-bold text-lg">
-                      {goal.unit === "$" ? `$${goal.currentValue.toLocaleString()}` : `${goal.currentValue.toLocaleString()} ${goal.unit}`}
-                    </Text>
-                    <Text className="text-muted text-sm">
-                      of {goal.unit === "$" ? `$${goal.targetValue.toLocaleString()}` : `${goal.targetValue.toLocaleString()} ${goal.unit}`}
-                    </Text>
-                  </View>
-                  <AnimatedProgressBar
-                    progress={progress}
-                    isSurpassed={goal.isSurpassed}
+              {/* Progress Bar */}
+              <View>
+                <View className="flex-row justify-between items-center mb-1">
+                  <Text className="text-xs sm:text-sm text-foreground font-medium">
+                    {goal.currentValue} / {goal.targetValue} {goal.unit}
+                  </Text>
+                  <Text className="text-xs sm:text-sm font-semibold text-accent">
+                    {progress}%
+                  </Text>
+                </View>
+                <View className="h-2 sm:h-3 light:bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <View
+                    className="h-full light:bg-blue-500 dark:bg-blue-600 rounded-full"
+                    style={{
+                      width: `${Math.min(100, progress)}%`,
+                    }}
                   />
                 </View>
+              </View>
 
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center">
-                    <Calendar size={14} color={mutedColor} />
-                    <Text className="text-muted text-xs ml-1">
+              {/* Meta Information: Date and Updates */}
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center gap-1">
+                  <Calendar size={14} color={accentColor} />
+                  <Text className="text-xs sm:text-sm light:text-gray-600 dark:text-gray-400">
+                    {formatDate(goal.startDate)}
+                  </Text>
+                </View>
+                {goal.updates && goal.updates.length > 0 && (
+                  <View className="flex-row items-center gap-1">
+                    <MessageCircle2 size={14} color={accentColor} />
+                    <Text className="text-xs sm:text-sm light:text-gray-600 dark:text-gray-400">
                       {goal.updates.length} update{goal.updates.length !== 1 ? "s" : ""}
                     </Text>
                   </View>
-                  <View className="flex-row items-center">
-                    <Text className="text-accent text-xs font-medium mr-1">
-                      View details
-                    </Text>
-                    <ChevronRight size={14} color={foregroundColor} />
-                  </View>
-                </View>
-              </Surface>
-            </MotiView>
-          )}
-        </Pressable>
-      </Link>
-    </SlideIn>
+                )}
+              </View>
+            </View>
+          </CardContent>
+        </Card>
+      </Pressable>
+    </Link>
   );
 }

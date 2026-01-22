@@ -217,8 +217,10 @@ discover.get("/stats", optionalAuthMiddleware, async (c) => {
   });
 });
 
-// Get top 3 users by completed goals (leaderboard)
+// Get top users by completed goals (global leaderboard)
 discover.get("/leaderboard", optionalAuthMiddleware, async (c) => {
+  const limit = parseInt(c.req.query("limit") || "10");
+  
   const topUsers = await prisma.user.findMany({
     where: {
       isPublic: true,
@@ -243,7 +245,7 @@ discover.get("/leaderboard", optionalAuthMiddleware, async (c) => {
         _count: "desc",
       },
     },
-    take: 3,
+    take: limit,
   });
 
   const leaderboard = topUsers.map((user, index) => ({
@@ -252,6 +254,158 @@ discover.get("/leaderboard", optionalAuthMiddleware, async (c) => {
     name: user.name || user.email,
     avatarUrl: user.avatarUrl,
     completedGoals: user._count.goals,
+    completionPercentage: 0, // Will be calculated if needed
+  }));
+
+  return c.json({ success: true, leaderboard });
+});
+
+// Get leaderboard for a specific goal (contributors/participants)
+discover.get("/leaderboard/goals/:goalId", optionalAuthMiddleware, async (c) => {
+  const goalId = c.req.param("goalId");
+  const limit = parseInt(c.req.query("limit") || "10");
+
+  // Verify goal exists and is public (if needed)
+  const goal = await prisma.goal.findUnique({
+    where: { id: goalId },
+    select: { userId: true, isPublic: true },
+  });
+
+  if (!goal) {
+    return c.json({ success: false, error: "Goal not found" }, 404);
+  }
+
+  // For now, just return the goal owner as top contributor
+  // This can be expanded to include collaborators or comments
+  const owner = await prisma.user.findUnique({
+    where: { id: goal.userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      avatarUrl: true,
+      _count: {
+        select: {
+          goals: {
+            where: {
+              isCompleted: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const leaderboard = owner ? [{
+    rank: 1,
+    id: owner.id,
+    name: owner.name || owner.email,
+    avatarUrl: owner.avatarUrl,
+    contributions: 1, // Goal creator
+  }] : [];
+
+  return c.json({ success: true, leaderboard });
+});
+
+// Get leaderboard for a specific gang (members by activity)
+discover.get("/leaderboard/gangs/:gangId", optionalAuthMiddleware, async (c) => {
+  const gangId = c.req.param("gangId");
+  const limit = parseInt(c.req.query("limit") || "10");
+
+  // Verify gang exists
+  const gang = await prisma.gang.findUnique({
+    where: { id: gangId },
+    select: { userAId: true, userBId: true },
+  });
+
+  if (!gang) {
+    return c.json({ success: false, error: "Gang not found" }, 404);
+  }
+
+  // Get both gang members with their goal completion stats
+  const members = await prisma.user.findMany({
+    where: {
+      id: { in: [gang.userAId, gang.userBId] },
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      avatarUrl: true,
+      _count: {
+        select: {
+          goals: {
+            where: { isCompleted: true },
+          },
+        },
+      },
+    },
+  });
+
+  const leaderboard = members
+    .sort((a, b) => b._count.goals - a._count.goals)
+    .map((user, index) => ({
+      rank: index + 1,
+      id: user.id,
+      name: user.name || user.email,
+      avatarUrl: user.avatarUrl,
+      contributions: user._count.goals,
+    }));
+
+  return c.json({ success: true, leaderboard });
+});
+
+// Get leaderboard for a specific group (members by activity)
+discover.get("/leaderboard/groups/:groupId", optionalAuthMiddleware, async (c) => {
+  const groupId = c.req.param("groupId");
+  const limit = parseInt(c.req.query("limit") || "10");
+
+  // Verify group exists
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    select: { id: true },
+  });
+
+  if (!group) {
+    return c.json({ success: false, error: "Group not found" }, 404);
+  }
+
+  // Get all group members with their goal completion stats
+  const members = await prisma.groupMember.findMany({
+    where: { groupId },
+    select: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatarUrl: true,
+          _count: {
+            select: {
+              goals: {
+                where: { isCompleted: true },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      user: {
+        goals: {
+          _count: "desc",
+        },
+      },
+    },
+    take: limit,
+  });
+
+  const leaderboard = members.map((member, index) => ({
+    rank: index + 1,
+    id: member.user.id,
+    name: member.user.name || member.user.email,
+    avatarUrl: member.user.avatarUrl,
+    contributions: member.user._count.goals,
   }));
 
   return c.json({ success: true, leaderboard });
