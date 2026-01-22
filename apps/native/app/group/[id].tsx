@@ -12,19 +12,25 @@ import {
   ChevronRight,
   Globe,
   Lock,
+  Medal,
 } from "lucide-react-native";
-import { Text, View, Alert, Pressable, Share } from "react-native";
-import { useMemo } from "react";
+import { Text, View, Alert, Pressable, Share, ScrollView } from "react-native";
+import { useMemo, useState, useEffect } from "react";
 import * as Clipboard from "expo-clipboard";
 
 import { Container } from "@/components/container";
 import { FadeIn, SlideIn } from "@/components/animations";
+import { Leaderboard } from "@/components/leaderboard";
 import { useGroups, useGoals } from "@/hooks/use-data";
+import { discoverApi } from "@/lib/api";
+import type { LeaderboardUser } from "@/lib/api";
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { groups, leaveGroup } = useGroups();
   const { goals } = useGoals();
+  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
 
   const foregroundColor = useThemeColor("foreground");
   const successColor = useThemeColor("success");
@@ -38,6 +44,25 @@ export default function GroupDetailScreen() {
     () => goals.filter((g) => g.groupId === id),
     [goals, id]
   );
+
+  // Fetch group-specific leaderboard
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchLeaderboard = async () => {
+      try {
+        setIsLoadingLeaderboard(true);
+        const response = await discoverApi.getGroupLeaderboard(id, 10);
+        setLeaderboard(response.leaderboard || []);
+      } catch (error) {
+        console.error("Failed to fetch group leaderboard:", error);
+      } finally {
+        setIsLoadingLeaderboard(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [id]);
 
   const currentUserId = "user_1";
 
@@ -114,7 +139,8 @@ export default function GroupDetailScreen() {
             ) : null,
         }}
       />
-      <Container className="p-4">
+      <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+        <Container className="p-4">
         {/* Group Header */}
         <FadeIn>
           <Surface variant="secondary" className="p-5 rounded-xl mb-4">
@@ -183,6 +209,16 @@ export default function GroupDetailScreen() {
             </Surface>
           </Surface>
         </FadeIn>
+
+        {/* Group Leaderboard */}
+        <SlideIn delay={75}>
+          <Leaderboard
+            users={leaderboard}
+            title="Group Members Ranking"
+            isLoading={isLoadingLeaderboard}
+            entityType="group"
+          />
+        </SlideIn>
 
         {/* Members Section */}
         <SlideIn delay={100}>
@@ -283,7 +319,8 @@ export default function GroupDetailScreen() {
             </Button>
           </SlideIn>
         )}
-      </Container>
+        </Container>
+      </ScrollView>
     </>
   );
 }

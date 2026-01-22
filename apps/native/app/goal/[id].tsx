@@ -12,18 +12,24 @@ import {
   Trash2,
   Clock,
   Award,
+  Medal,
 } from "lucide-react-native";
-import { Text, View, Alert, Image as RNImage, Pressable } from "react-native";
-import { useMemo } from "react";
+import { Text, View, Alert, Image as RNImage, Pressable, ScrollView } from "react-native";
+import { useMemo, useState, useEffect } from "react";
 
 import { Container } from "@/components/container";
 import { FadeIn, SlideIn, AnimatedProgressBar } from "@/components/animations";
+import { Leaderboard } from "@/components/leaderboard";
 import { useGoals } from "@/hooks/use-data";
+import { discoverApi } from "@/lib/api";
 import { scheduleGoalCompletionNotification } from "@/lib/notifications";
+import type { LeaderboardUser } from "@/lib/api";
 
 export default function GoalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { goals, deleteGoal } = useGoals();
+  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
 
   const foregroundColor = useThemeColor("foreground");
   const successColor = useThemeColor("success");
@@ -32,6 +38,25 @@ export default function GoalDetailScreen() {
   const mutedColor = useThemeColor("muted");
 
   const goal = useMemo(() => goals.find((g) => g.id === id), [goals, id]);
+
+  // Fetch goal-specific leaderboard
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchLeaderboard = async () => {
+      try {
+        setIsLoadingLeaderboard(true);
+        const response = await discoverApi.getGoalLeaderboard(id, 10);
+        setLeaderboard(response.leaderboard || []);
+      } catch (error) {
+        console.error("Failed to fetch goal leaderboard:", error);
+      } finally {
+        setIsLoadingLeaderboard(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [id]);
 
   if (!goal) {
     return (
@@ -100,9 +125,10 @@ export default function GoalDetailScreen() {
           ),
         }}
       />
-      <Container className="p-4">
-        {/* Goal Header */}
-        <FadeIn>
+      <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+        <Container className="p-4">
+          {/* Goal Header */}
+          <FadeIn>
           <Surface variant="secondary" className="p-5 rounded-xl mb-4">
             <View className="flex-row items-start justify-between mb-4">
               <View className="flex-1 mr-3">
@@ -199,6 +225,16 @@ export default function GoalDetailScreen() {
           </SlideIn>
         )}
 
+        {/* Goal Contributors Leaderboard */}
+        <SlideIn delay={150}>
+          <Leaderboard
+            users={leaderboard}
+            title="Goal Contributors"
+            isLoading={isLoadingLeaderboard}
+            entityType="goal"
+          />
+        </SlideIn>
+
         {/* Updates Timeline */}
         <SlideIn delay={200}>
           <Text className="text-foreground font-semibold text-lg mb-3">
@@ -276,7 +312,8 @@ export default function GoalDetailScreen() {
             </Surface>
           </SlideIn>
         )}
-      </Container>
+        </Container>
+      </ScrollView>
     </>
   );
 }
