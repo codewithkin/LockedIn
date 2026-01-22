@@ -17,6 +17,11 @@
     },
     "android": {
       "package": "com.codewithkin.LockedIn"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "53d8e82e-dabb-4c4c-80eb-cea9fceaba3c"
+      }
     }
   }
 }
